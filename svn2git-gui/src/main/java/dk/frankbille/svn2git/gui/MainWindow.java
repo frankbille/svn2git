@@ -17,6 +17,8 @@ import javax.swing.ListSelectionModel;
 import javax.swing.RowSorter;
 import javax.swing.RowSorter.SortKey;
 import javax.swing.SortOrder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableRowSorter;
 
 import com.jgoodies.forms.factories.FormFactory;
@@ -28,6 +30,8 @@ import dk.frankbille.svn2git.model.BranchEntry;
 import dk.frankbille.svn2git.model.Project;
 import dk.frankbille.svn2git.model.TagEntry;
 import dk.frankbille.svn2git.model.TrunkEntry;
+
+import java.awt.Dimension;
 
 public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -162,52 +166,60 @@ public class MainWindow extends JFrame {
 		JLabel trunkEntriesLabel = new JLabel("Trunk entries:");
 		mappingsPanel.add(trunkEntriesLabel, "2, 2");
 		
-		IconLabel addTrunkEntry = new IconLabel();
-		addTrunkEntry.setText("\uf067");
+		JButton addTrunkEntry = new JButton("+");
+		addTrunkEntry.setToolTipText("Add new trunk mapping");
+		{
+			Dimension preferredSize = addTrunkEntry.getPreferredSize();
+			addTrunkEntry.setPreferredSize(new Dimension(45, preferredSize.height));
+		}
 		mappingsPanel.add(addTrunkEntry, "3, 2");
 		
-		IconLabel removeTrunkEntry = new IconLabel();
-		removeTrunkEntry.setText("\uf068");
+		JButton removeTrunkEntry = new JButton("-");
+		removeTrunkEntry.setToolTipText("Remove selected trunk mapping");
+		{
+			Dimension preferredSize = removeTrunkEntry.getPreferredSize();
+			removeTrunkEntry.setPreferredSize(new Dimension(45, preferredSize.height));
+		}
 		mappingsPanel.add(removeTrunkEntry, "5, 2");
 		
 		JScrollPane trunkEntryListScrollPane = new JScrollPane();
 		mappingsPanel.add(trunkEntryListScrollPane, "2, 4, 4, 1, fill, fill");
 		
 		JList<TrunkEntry> trunkEntryList = new JList<>();
+//		trunkEntryList.setModel(model)
+		trunkEntryList.addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				System.out.println(e);
+			}
+		});
 		trunkEntryListScrollPane.setViewportView(trunkEntryList);
 		
 		JLabel branchEntriesLabel = new JLabel("Branch entries:");
+		branchEntriesLabel.setToolTipText("Not implemented yet");
+		branchEntriesLabel.setEnabled(false);
 		mappingsPanel.add(branchEntriesLabel, "2, 6");
 		
-		IconLabel addBranchEntry = new IconLabel();
-		addBranchEntry.setText("\uF067");
-		mappingsPanel.add(addBranchEntry, "3, 6");
-		
-		IconLabel removeBranchEntry = new IconLabel();
-		removeBranchEntry.setText("\uF068");
-		mappingsPanel.add(removeBranchEntry, "5, 6");
-		
 		JScrollPane branchEntryListScrollPane = new JScrollPane();
+		branchEntryListScrollPane.setEnabled(false);
 		mappingsPanel.add(branchEntryListScrollPane, "2, 8, 4, 1, fill, fill");
 		
 		JList<BranchEntry> branchEntryList = new JList<>();
+		branchEntryList.setToolTipText("Not implemented yet");
+		branchEntryList.setEnabled(false);
 		branchEntryListScrollPane.setViewportView(branchEntryList);
 		
 		JLabel tagEntriesLabel = new JLabel("Tag entries:");
+		tagEntriesLabel.setEnabled(false);
 		mappingsPanel.add(tagEntriesLabel, "2, 10");
 		
-		IconLabel addTagEntry = new IconLabel();
-		addTagEntry.setText("\uF067");
-		mappingsPanel.add(addTagEntry, "3, 10");
-		
-		IconLabel removeTagEntry = new IconLabel();
-		removeTagEntry.setText("\uF068");
-		mappingsPanel.add(removeTagEntry, "5, 10");
-		
 		JScrollPane tagEntryListScrollPane = new JScrollPane();
+		tagEntryListScrollPane.setEnabled(false);
 		mappingsPanel.add(tagEntryListScrollPane, "2, 12, 4, 1, fill, fill");
 		
 		JList<TagEntry> tagEntryList = new JList<>();
+		tagEntryList.setToolTipText("Not implemented yet");
+		tagEntryList.setEnabled(false);
 		tagEntryListScrollPane.setViewportView(tagEntryList);
 		
 		JButton quitButton = new JButton("Quit");
