@@ -27,10 +27,10 @@ public class TrunkEntry extends Entry {
 	public String getDestinationPath() {
 		return destinationPath;
 	}
-
+	
 	@Override
-	public String getLabel() {
-		return "Trunk";
+	public String toString() {
+		return sourcePath+" => "+destinationPath;
 	}
 
 }

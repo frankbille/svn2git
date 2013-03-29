@@ -1,6 +1,9 @@
 package dk.frankbille.svn2git.gui;
 
+import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,8 +34,6 @@ import dk.frankbille.svn2git.model.Project;
 import dk.frankbille.svn2git.model.TagEntry;
 import dk.frankbille.svn2git.model.TrunkEntry;
 
-import java.awt.Dimension;
-
 public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private final JPanel mappingsPanel = new JPanel();
@@ -40,6 +41,8 @@ public class MainWindow extends JFrame {
 	private JTextField textField_1;
 	private JTable authorsTable;
 	private Project project;
+	private JList<TrunkEntry> trunkEntryList;
+	private TrunkEntryListModel trunkEntryListModel;
 	
 	/**
 	 * Launch the application.
@@ -174,7 +177,15 @@ public class MainWindow extends JFrame {
 		}
 		mappingsPanel.add(addTrunkEntry, "3, 2");
 		
-		JButton removeTrunkEntry = new JButton("-");
+		final JButton removeTrunkEntry = new JButton("-");
+		removeTrunkEntry.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int[] selectedIndices = trunkEntryList.getSelectedIndices();
+				trunkEntryListModel.removeTrunkEntries(selectedIndices);
+				trunkEntryList.clearSelection();
+			}
+		});
+		removeTrunkEntry.setEnabled(false);
 		removeTrunkEntry.setToolTipText("Remove selected trunk mapping");
 		{
 			Dimension preferredSize = removeTrunkEntry.getPreferredSize();
@@ -185,12 +196,15 @@ public class MainWindow extends JFrame {
 		JScrollPane trunkEntryListScrollPane = new JScrollPane();
 		mappingsPanel.add(trunkEntryListScrollPane, "2, 4, 4, 1, fill, fill");
 		
-		JList<TrunkEntry> trunkEntryList = new JList<>();
-//		trunkEntryList.setModel(model)
+		trunkEntryList = new JList<>();
+		trunkEntryListModel = new TrunkEntryListModel(project);
+		trunkEntryList.setModel(trunkEntryListModel);
 		trunkEntryList.addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
-				System.out.println(e);
+				if (false == e.getValueIsAdjusting()) {
+					removeTrunkEntry.setEnabled(false == trunkEntryList.isSelectionEmpty());
+				}
 			}
 		});
 		trunkEntryListScrollPane.setViewportView(trunkEntryList);
