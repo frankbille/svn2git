@@ -2,26 +2,55 @@ package dk.frankbille.svn2git.model;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.StringTokenizer;
+import java.util.TreeMap;
+
+import org.apache.commons.io.IOUtils;
 
 public class Project {
 
 	private PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 	
-	private Properties authors = new Properties();
+	private SortedMap<String, String> authors = new TreeMap<>();
 	private List<TrunkEntry> trunkEntries = new ArrayList<>();
 	
 	public Project() {
 	}
 
-	public Properties getAuthors() {
+	public void loadAuthors(InputStream authorStream) throws IOException {
+		authors.clear();
+		
+		String authorsContent = IOUtils.toString(authorStream, "UTF-8");
+		StringTokenizer contentTokenizer = new StringTokenizer(authorsContent, "\r\n");
+		while (contentTokenizer.hasMoreTokens()) {
+			String line = contentTokenizer.nextToken();
+			StringTokenizer lineTokenizer = new StringTokenizer(line, "=");
+			String svnUsername = lineTokenizer.nextToken().trim();
+			String gitAuthor = lineTokenizer.nextToken().trim();
+			updateAuthor(null, svnUsername, gitAuthor);
+		}
+	}
+	
+	public Map<String, String> getAuthors() {
 		return authors;
+	}
+	
+	public void setAuthors(Map<String, String> authors) {
+		this.authors = new TreeMap<>(authors);
 	}
 	
 	public List<TrunkEntry> getTrunkEntries() {
 		return trunkEntries;
+	}
+	
+	public void setTrunkEntries(List<TrunkEntry> trunkEntries) {
+		this.trunkEntries = trunkEntries;
 	}
 	
 	public void addTrunkEntry(TrunkEntry trunkEntry) {
@@ -33,9 +62,9 @@ public class Project {
 	}
 
 	public void updateAuthor(String existingSvnUsername, String newSvnUsername, String newGitAuthor) {
-		String existingGitAuthor = authors.getProperty(existingSvnUsername);
+		String existingGitAuthor = authors.get(existingSvnUsername);
 		authors.remove(existingSvnUsername);
-		authors.setProperty(newSvnUsername, newGitAuthor);
+		authors.put(newSvnUsername, newGitAuthor);
 		propertyChangeSupport.firePropertyChange("authors", existingSvnUsername+":"+existingGitAuthor, newSvnUsername+":"+newGitAuthor);
 	}
 	

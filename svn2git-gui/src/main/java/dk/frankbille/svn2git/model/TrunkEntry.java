@@ -2,9 +2,12 @@ package dk.frankbille.svn2git.model;
 
 public class TrunkEntry extends Entry {
 
-	private final String checkoutPath;
-	private final String sourcePath;
-	private final String destinationPath;
+	private String checkoutPath;
+	private String sourcePath;
+	private String destinationPath;
+	
+	public TrunkEntry() {
+	}
 	
 	public TrunkEntry(String sourcePath, String destinationPath) {
 		this(sourcePath, sourcePath, destinationPath);
@@ -20,12 +23,24 @@ public class TrunkEntry extends Entry {
 		return checkoutPath;
 	}
 	
+	public void setCheckoutPath(String checkoutPath) {
+		this.checkoutPath = checkoutPath;
+	}
+	
 	public String getSourcePath() {
 		return sourcePath;
 	}
 	
+	public void setSourcePath(String sourcePath) {
+		this.sourcePath = sourcePath;
+	}
+	
 	public String getDestinationPath() {
 		return destinationPath;
+	}
+	
+	public void setDestinationPath(String destinationPath) {
+		this.destinationPath = destinationPath;
 	}
 	
 	@Override

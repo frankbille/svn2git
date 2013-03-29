@@ -1,13 +1,18 @@
 package dk.frankbille.svn2git.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -16,6 +21,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.RowSorter;
 import javax.swing.RowSorter.SortKey;
@@ -31,6 +37,7 @@ import com.jgoodies.forms.layout.RowSpec;
 
 import dk.frankbille.svn2git.model.BranchEntry;
 import dk.frankbille.svn2git.model.Project;
+import dk.frankbille.svn2git.model.ProjectUtils;
 import dk.frankbille.svn2git.model.TagEntry;
 import dk.frankbille.svn2git.model.TrunkEntry;
 
@@ -40,9 +47,11 @@ public class MainWindow extends JFrame {
 	private JTextField textField;
 	private JTextField textField_1;
 	private JTable authorsTable;
-	private Project project;
 	private JList<TrunkEntry> trunkEntryList;
 	private TrunkEntryListModel trunkEntryListModel;
+	private final JPanel contentPanel = new JPanel();
+	private File projectFile;
+	private Project project;
 	
 	/**
 	 * Launch the application.
@@ -64,11 +73,11 @@ public class MainWindow extends JFrame {
 	 * Create the frame.
 	 */
 	public MainWindow() {
-		this.project = new Project();
-		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 718, 476);
-		getContentPane().setLayout(new FormLayout(new ColumnSpec[] {
+		getContentPane().setLayout(new BorderLayout(0, 0));
+		getContentPane().add(contentPanel, BorderLayout.CENTER);
+		contentPanel.setLayout(new FormLayout(new ColumnSpec[] {
 				FormFactory.RELATED_GAP_COLSPEC,
 				FormFactory.BUTTON_COLSPEC,
 				FormFactory.RELATED_GAP_COLSPEC,
@@ -86,7 +95,7 @@ public class MainWindow extends JFrame {
 				FormFactory.RELATED_GAP_ROWSPEC,}));
 		
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		getContentPane().add(tabbedPane, "2, 2, 7, 1, fill, fill");
+		contentPanel.add(tabbedPane, "2, 2, 7, 1, fill, fill");
 		
 		JPanel generalPanel = new JPanel();
 		tabbedPane.addTab("General", null, generalPanel, null);
@@ -133,15 +142,7 @@ public class MainWindow extends JFrame {
 		
 		JScrollPane authorsTableScrollPane = new JScrollPane();
 		authorsPanel.add(authorsTableScrollPane, "2, 2, fill, fill");
-		
-		AuthorsTableModel authorsModel = new AuthorsTableModel(project);
-		authorsTable = new JTable(authorsModel);
-		authorsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		TableRowSorter<AuthorsTableModel> sorter = new TableRowSorter<AuthorsTableModel>(authorsModel);
-		List<SortKey> sortKeys = new ArrayList<>(sorter.getSortKeys());
-		sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
-		sorter.setSortKeys(sortKeys);
-		authorsTable.setRowSorter(sorter);
+		authorsTable = new JTable();
 		authorsTableScrollPane.setViewportView(authorsTable);
 		tabbedPane.addTab("Mappings", null, mappingsPanel, null);
 		mappingsPanel.setLayout(new FormLayout(new ColumnSpec[] {
@@ -197,8 +198,6 @@ public class MainWindow extends JFrame {
 		mappingsPanel.add(trunkEntryListScrollPane, "2, 4, 4, 1, fill, fill");
 		
 		trunkEntryList = new JList<>();
-		trunkEntryListModel = new TrunkEntryListModel(project);
-		trunkEntryList.setModel(trunkEntryListModel);
 		trunkEntryList.addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
@@ -237,12 +236,80 @@ public class MainWindow extends JFrame {
 		tagEntryListScrollPane.setViewportView(tagEntryList);
 		
 		JButton quitButton = new JButton("Quit");
-		getContentPane().add(quitButton, "2, 4");
+		contentPanel.add(quitButton, "2, 4");
 		
 		JButton testButton = new JButton("Test");
-		getContentPane().add(testButton, "6, 4");
+		contentPanel.add(testButton, "6, 4");
 		
 		JButton executeButton = new JButton("Execute");
-		getContentPane().add(executeButton, "8, 4");
+		executeButton.setIcon(new ImageIcon(MainWindow.class.getResource("/control.png")));
+		contentPanel.add(executeButton, "8, 4");
+		
+		JToolBar toolBar = new JToolBar();
+		toolBar.setFloatable(false);
+		getContentPane().add(toolBar, BorderLayout.NORTH);
+		
+		JButton loadProjectButton = new JButton((String) null);
+		loadProjectButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser projectFileChooser = new JFileChooser();
+				projectFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				projectFileChooser.setMultiSelectionEnabled(false);
+				if (projectFileChooser.showDialog(MainWindow.this, "Select project file") == JFileChooser.APPROVE_OPTION) {
+					try {
+						projectFile = projectFileChooser.getSelectedFile();
+						setProject(ProjectUtils.load(projectFile));
+					} catch (IOException e1) {
+						throw new RuntimeException(e1);
+					}
+				}
+			}
+		});
+		loadProjectButton.setToolTipText("Open Project");
+		loadProjectButton.setIcon(new ImageIcon(MainWindow.class.getResource("/folder-horizontal-open.png")));
+		toolBar.add(loadProjectButton);
+		
+		JButton saveProjectButton = new JButton((String) null);
+		saveProjectButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (projectFile == null) {
+					JFileChooser projectFileChooser = new JFileChooser();
+					projectFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+					projectFileChooser.setMultiSelectionEnabled(false);
+					if (projectFileChooser.showDialog(MainWindow.this, "Select project file") == JFileChooser.APPROVE_OPTION) {
+						projectFile = projectFileChooser.getSelectedFile();
+					}
+				}
+				
+				if (projectFile != null) {
+					try {
+						ProjectUtils.save(project, projectFile);
+					} catch (IOException e1) {
+						throw new RuntimeException(e1);
+					}
+				}
+			}
+		});
+		saveProjectButton.setToolTipText("Save project");
+		saveProjectButton.setIcon(new ImageIcon(MainWindow.class.getResource("/disk.png")));
+		toolBar.add(saveProjectButton);
+		
+		setProject(new Project());
+	}
+	
+	private void setProject(Project project) {
+		this.project = project;
+		
+		trunkEntryListModel = new TrunkEntryListModel(project);
+		trunkEntryList.setModel(trunkEntryListModel);
+		
+		AuthorsTableModel authorsModel = new AuthorsTableModel(project);
+		authorsTable.setModel(authorsModel);
+		authorsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		TableRowSorter<AuthorsTableModel> sorter = new TableRowSorter<AuthorsTableModel>(authorsModel);
+		authorsTable.setRowSorter(sorter);
+		List<SortKey> sortKeys = new ArrayList<>(sorter.getSortKeys());
+		sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
+		sorter.setSortKeys(sortKeys);
 	}
 }

@@ -4,7 +4,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 
 import javax.swing.table.AbstractTableModel;
 
@@ -94,9 +94,9 @@ public class AuthorsTableModel extends AbstractTableModel {
 	private List<AuthorMapping> getAuthors() {
 		if (authors == null) {
 			authors = new ArrayList<>();
-			Properties authorMappings = project.getAuthors();
-			for (String svnUsername : authorMappings.stringPropertyNames()) {
-				String gitAuthor = authorMappings.getProperty(svnUsername);
+			Map<String, String> authorMappings = project.getAuthors();
+			for (String svnUsername : authorMappings.keySet()) {
+				String gitAuthor = authorMappings.get(svnUsername);
 				authors.add(new AuthorMapping(svnUsername, gitAuthor));
 			}
 		}
