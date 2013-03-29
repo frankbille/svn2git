@@ -1,6 +1,8 @@
 package dk.frankbille.svn2git.gui;
 
 import java.awt.EventQueue;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -9,6 +11,13 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.RowSorter;
+import javax.swing.RowSorter.SortKey;
+import javax.swing.SortOrder;
+import javax.swing.table.TableRowSorter;
 
 import com.jgoodies.forms.factories.FormFactory;
 import com.jgoodies.forms.layout.ColumnSpec;
@@ -16,19 +25,17 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.RowSpec;
 
 import dk.frankbille.svn2git.model.BranchEntry;
+import dk.frankbille.svn2git.model.Project;
 import dk.frankbille.svn2git.model.TagEntry;
 import dk.frankbille.svn2git.model.TrunkEntry;
-import javax.swing.JTextField;
-import java.awt.BorderLayout;
-import javax.swing.JTable;
 
 public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private final JPanel mappingsPanel = new JPanel();
 	private JTextField textField;
 	private JTextField textField_1;
-	private JTextField textField_2;
 	private JTable authorsTable;
+	private Project project;
 	
 	/**
 	 * Launch the application.
@@ -50,6 +57,8 @@ public class MainWindow extends JFrame {
 	 * Create the frame.
 	 */
 	public MainWindow() {
+		this.project = new Project();
+		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 718, 476);
 		getContentPane().setLayout(new FormLayout(new ColumnSpec[] {
@@ -85,8 +94,6 @@ public class MainWindow extends JFrame {
 				FormFactory.RELATED_GAP_ROWSPEC,
 				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,
-				FormFactory.DEFAULT_ROWSPEC,
-				FormFactory.RELATED_GAP_ROWSPEC,
 				FormFactory.DEFAULT_ROWSPEC,}));
 		
 		JLabel lblNewLabel = new JLabel("Subversion URL");
@@ -96,7 +103,7 @@ public class MainWindow extends JFrame {
 		generalPanel.add(textField, "4, 2, 2, 1, fill, default");
 		textField.setColumns(10);
 		
-		JLabel lblNewLabel_1 = new JLabel("Git Repository");
+		JLabel lblNewLabel_1 = new JLabel("Git fast-import file");
 		generalPanel.add(lblNewLabel_1, "2, 4, left, default");
 		
 		textField_1 = new JTextField();
@@ -106,24 +113,28 @@ public class MainWindow extends JFrame {
 		JButton button = new JButton("...");
 		generalPanel.add(button, "5, 4");
 		
-		JLabel lblNewLabel_2 = new JLabel("Authors File");
-		generalPanel.add(lblNewLabel_2, "2, 6, left, default");
-		
-		textField_2 = new JTextField();
-		generalPanel.add(textField_2, "4, 6, fill, default");
-		textField_2.setColumns(10);
-		
-		JButton button_1 = new JButton("...");
-		generalPanel.add(button_1, "5, 6");
-		
 		JPanel authorsPanel = new JPanel();
 		tabbedPane.addTab("Authors", null, authorsPanel, null);
-		authorsPanel.setLayout(new BorderLayout(0, 0));
+		authorsPanel.setLayout(new FormLayout(new ColumnSpec[] {
+				FormFactory.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("default:grow"),
+				FormFactory.RELATED_GAP_COLSPEC,},
+			new RowSpec[] {
+				FormFactory.RELATED_GAP_ROWSPEC,
+				RowSpec.decode("default:grow"),
+				FormFactory.RELATED_GAP_ROWSPEC,}));
 		
 		JScrollPane authorsTableScrollPane = new JScrollPane();
-		authorsPanel.add(authorsTableScrollPane, BorderLayout.CENTER);
+		authorsPanel.add(authorsTableScrollPane, "2, 2, fill, fill");
 		
-		authorsTable = new JTable();
+		AuthorsTableModel authorsModel = new AuthorsTableModel(project);
+		authorsTable = new JTable(authorsModel);
+		authorsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		TableRowSorter<AuthorsTableModel> sorter = new TableRowSorter<AuthorsTableModel>(authorsModel);
+		List<SortKey> sortKeys = new ArrayList<>(sorter.getSortKeys());
+		sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
+		sorter.setSortKeys(sortKeys);
+		authorsTable.setRowSorter(sorter);
 		authorsTableScrollPane.setViewportView(authorsTable);
 		tabbedPane.addTab("Mappings", null, mappingsPanel, null);
 		mappingsPanel.setLayout(new FormLayout(new ColumnSpec[] {
