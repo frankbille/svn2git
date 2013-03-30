@@ -5,6 +5,8 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,12 +14,14 @@ import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -58,6 +62,9 @@ public class MainWindow extends JFrame {
 	private final JPanel contentPanel = new JPanel();
 	private File projectFile;
 	private Project project;
+	private JSpinner endRevisionField;
+	private JSpinner startRevisionField;
+	private JCheckBox endIsHead;
 
 	/**
 	 * Launch the application.
@@ -112,10 +119,17 @@ public class MainWindow extends JFrame {
 				FormFactory.RELATED_GAP_COLSPEC,
 				ColumnSpec.decode("left:default"),
 				FormFactory.LABEL_COMPONENT_GAP_COLSPEC,
+				FormFactory.BUTTON_COLSPEC,
+				FormFactory.RELATED_GAP_COLSPEC,
 				ColumnSpec.decode("default:grow"),
+				FormFactory.RELATED_GAP_COLSPEC,
 				FormFactory.DEFAULT_COLSPEC,
 				FormFactory.RELATED_GAP_COLSPEC,},
 			new RowSpec[] {
+				FormFactory.RELATED_GAP_ROWSPEC,
+				FormFactory.DEFAULT_ROWSPEC,
+				FormFactory.RELATED_GAP_ROWSPEC,
+				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,
 				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,
@@ -140,7 +154,7 @@ public class MainWindow extends JFrame {
 			public void changedUpdate(DocumentEvent e) {
 			}
 		});
-		generalPanel.add(subversionUrlField, "4, 2, 2, 1, fill, default");
+		generalPanel.add(subversionUrlField, "4, 2, 5, 1, fill, default");
 		subversionUrlField.setColumns(10);
 
 		JLabel gitFastImportFileLabel = new JLabel("Git fast-import file");
@@ -161,7 +175,7 @@ public class MainWindow extends JFrame {
 			public void changedUpdate(DocumentEvent e) {
 			}
 		});
-		generalPanel.add(gitFastImportFileField, "4, 4, fill, default");
+		generalPanel.add(gitFastImportFileField, "4, 4, 3, 1, fill, default");
 		gitFastImportFileField.setColumns(10);
 
 		JButton locateGitFastImportFileButton = new JButton("...");
@@ -182,7 +196,30 @@ public class MainWindow extends JFrame {
 				}
 			}
 		});
-		generalPanel.add(locateGitFastImportFileButton, "5, 4");
+		generalPanel.add(locateGitFastImportFileButton, "8, 4");
+
+		JLabel startRevisionLabel = new JLabel("Start revision");
+		generalPanel.add(startRevisionLabel, "2, 6, left, default");
+		
+		startRevisionField = new JSpinner();
+		startRevisionField.setEditor(new JSpinner.NumberEditor(startRevisionField));
+		generalPanel.add(startRevisionField, "4, 6");
+		
+		JLabel lblEndRevision = new JLabel("End revision");
+		generalPanel.add(lblEndRevision, "2, 8, left, default");
+		
+		endRevisionField = new JSpinner();
+		endRevisionField.setEditor(new JSpinner.NumberEditor(endRevisionField));
+		generalPanel.add(endRevisionField, "4, 8");
+		
+		endIsHead = new JCheckBox("HEAD");
+		endIsHead.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				project.setEndHeadRevision(endIsHead.isSelected());
+				setEndRevisionEnabledState();
+			}
+		});
+		generalPanel.add(endIsHead, "6, 8");
 
 		JPanel authorsPanel = new JPanel();
 		tabbedPane.addTab("Authors", null, authorsPanel, null);
@@ -367,6 +404,10 @@ public class MainWindow extends JFrame {
 
 		subversionUrlField.setText(project.getSvnUrl());
 		gitFastImportFileField.setText(project.getGitFastImportFile());
+		endIsHead.setSelected(project.isEndHeadRevision());
+		
+		new RevisionModel(true, project, startRevisionField);
+		new RevisionModel(false, project, endRevisionField);
 
 		trunkEntryListModel = new TrunkEntryListModel(project);
 		trunkEntryList.setModel(trunkEntryListModel);
@@ -379,5 +420,11 @@ public class MainWindow extends JFrame {
 		List<SortKey> sortKeys = new ArrayList<>(sorter.getSortKeys());
 		sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
 		sorter.setSortKeys(sortKeys);
+		
+		setEndRevisionEnabledState();
+	}
+	
+	private void setEndRevisionEnabledState() {
+		endRevisionField.setEnabled(false == project.isEndHeadRevision());
 	}
 }
