@@ -1,0 +1,17 @@
+language: java
+script: mvn test package
+jdk:
+  - openjdk7
+branches:
+  only:
+    - master
+env:
+ global:
+   - "ARTIFACTS_AWS_REGION=eu-west-1"
+   - "ARTIFACTS_S3_BUCKET=github-files"
+   - secure: "iecgf9LRroK6ZPRzFZyqzPbkHrjOKJuBXejhKtm+oDVlfHafhjm2vUF+roDK\nYi4VCYvCL19D9Jot8L7WmhTGr+NrskbIWYo5NGxLgGk6MisEXGC+T6LhyKc/\n/x0Od+PUWE1FkehLrl46gdte/hyapPaeGeylbE1ZbxIS8yME3+0="
+   - secure: "aUq2xiHGxHOkO8rnJ1C8HAxJX0YkUoT5Z3kMYLlTnUAfVs2Kh/BriBf7/Bd/\n59dRZYbiKq4rm0XxH8pboUh9VJBvPn/BvpvQiMpmiPoEnzAZhHxK1O/mB0W8\nq/mr6yMusHEmL9ctphmZ9ww8RObVYvlPo7Rf6brGY8wziAu4gkE="
+before_script:
+   - "gem install travis-artifacts"
+after_success:
+  - "travis-artifacts upload --path svn2git-gui/target/svn2git.jar --target-path svn2git"
