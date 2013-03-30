@@ -17,10 +17,28 @@ public class Project {
 
 	private PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 	
+	private String svnUrl;
+	private String gitFastImportFile;
 	private SortedMap<String, String> authors = new TreeMap<>();
 	private List<TrunkEntry> trunkEntries = new ArrayList<>();
 	
 	public Project() {
+	}
+	
+	public String getSvnUrl() {
+		return svnUrl;
+	}
+	
+	public void setSvnUrl(String svnUrl) {
+		this.svnUrl = svnUrl;
+	}
+	
+	public String getGitFastImportFile() {
+		return gitFastImportFile;
+	}
+	
+	public void setGitFastImportFile(String gitFastImportFile) {
+		this.gitFastImportFile = gitFastImportFile;
 	}
 
 	public void loadAuthors(InputStream authorStream) throws IOException {
