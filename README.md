@@ -1,4 +1,4 @@
-Subversion to Git converter [![Build Status](https://travis-ci.org/frankbille/svn2git.png)](https://travis-ci.org/frankbille/svn2git)
+Subversion to Git converter [![Build Status](https://travis-ci.org/frankbille/svn2git.png?branch=master)](https://travis-ci.org/frankbille/svn2git)
 ===========================
 
 
