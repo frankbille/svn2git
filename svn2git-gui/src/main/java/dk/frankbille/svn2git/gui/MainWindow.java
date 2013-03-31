@@ -20,7 +20,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -47,9 +46,9 @@ import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.RowSpec;
 
+import dk.frankbille.svn2git.model.MappingEntry;
 import dk.frankbille.svn2git.model.Project;
 import dk.frankbille.svn2git.model.ProjectUtils;
-import dk.frankbille.svn2git.model.MappingEntry;
 
 public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -57,8 +56,8 @@ public class MainWindow extends JFrame {
 	private JTextField subversionUrlField;
 	private JTextField gitFastImportFileField;
 	private JTable authorsTable;
-	private JList<MappingEntry> mappingEntryList;
-	private MappingEntryListModel trunkEntryListModel;
+	private JTable mappingEntryList;
+	private MappingEntryListModel mappingEntryListModel;
 	private final JPanel contentPanel = new JPanel();
 	private File projectFile;
 	private Project project;
@@ -279,8 +278,8 @@ public class MainWindow extends JFrame {
 		final JButton removeMappingEntry = new JButton("-");
 		removeMappingEntry.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				int[] selectedIndices = mappingEntryList.getSelectedIndices();
-				trunkEntryListModel.removeTrunkEntries(selectedIndices);
+				int[] selectedRows = mappingEntryList.getSelectedRows();
+				mappingEntryListModel.removeMappingEntries(selectedRows);
 				mappingEntryList.clearSelection();
 			}
 		});
@@ -295,12 +294,12 @@ public class MainWindow extends JFrame {
 		JScrollPane mappingEntryListScrollPane = new JScrollPane();
 		mappingsPanel.add(mappingEntryListScrollPane, "2, 4, 4, 1, fill, fill");
 
-		mappingEntryList = new JList<>();
-		mappingEntryList.addListSelectionListener(new ListSelectionListener() {
+		mappingEntryList = new JTable();
+		mappingEntryList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				if (false == e.getValueIsAdjusting()) {
-					removeMappingEntry.setEnabled(false == mappingEntryList.isSelectionEmpty());
+					removeMappingEntry.setEnabled(mappingEntryList.getSelectedRowCount() > 0);
 				}
 			}
 		});
@@ -308,10 +307,13 @@ public class MainWindow extends JFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2) {
-					MappingEntry selectedValue = mappingEntryList.getSelectedValue();
-					if (selectedValue != null) {
-						MappingEntryDialog editDialog = new MappingEntryDialog(selectedValue);
-						editDialog.setVisible(true);
+					int selectedRow = mappingEntryList.getSelectedRow();
+					if (selectedRow > -1) {
+						MappingEntry selectedValue = project.getMappingEntries().get(selectedRow);
+						if (selectedValue != null) {
+							MappingEntryDialog editDialog = new MappingEntryDialog(selectedValue);
+							editDialog.setVisible(true);
+						}
 					}
 				}
 			}
@@ -396,8 +398,8 @@ public class MainWindow extends JFrame {
 		new RevisionModel(true, project, startRevisionField);
 		new RevisionModel(false, project, endRevisionField);
 
-		trunkEntryListModel = new MappingEntryListModel(project);
-		mappingEntryList.setModel(trunkEntryListModel);
+		mappingEntryListModel = new MappingEntryListModel(project);
+		mappingEntryList.setModel(mappingEntryListModel);
 
 		AuthorsTableModel authorsModel = new AuthorsTableModel(project);
 		authorsTable.setModel(authorsModel);

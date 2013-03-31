@@ -11,9 +11,9 @@ import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.representer.Representer;
 
 public final class ProjectUtils {
-	
+
 	private static final Yaml yaml;
-	
+
 	static {
 		Constructor constructor = new Constructor(Project.class);
 		TypeDescription projectAuthorsDescription = new TypeDescription(Project.class);
@@ -31,10 +31,10 @@ public final class ProjectUtils {
 		String config = FileUtils.readFileToString(projectFile, "UTF-8");
 		return yaml.loadAs(config, Project.class);
 	}
-	
+
 	public static void save(Project project, File projectFile) throws IOException {
 		String config = yaml.dump(project);
 		FileUtils.write(projectFile, config, "UTF-8");
 	}
-	
+
 }
