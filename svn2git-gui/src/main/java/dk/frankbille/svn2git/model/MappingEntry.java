@@ -8,6 +8,7 @@ public class MappingEntry {
 	private String checkoutPath;
 	private String sourcePath;
 	private String destinationPath;
+	private String destinationRef;
 
 	private PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 
@@ -52,6 +53,16 @@ public class MappingEntry {
 		String oldDestinationPath = this.destinationPath;
 		this.destinationPath = destinationPath;
 		propertyChangeSupport.firePropertyChange("destinationPath", oldDestinationPath, destinationPath);
+	}
+	
+	public String getDestinationRef() {
+		return destinationRef;
+	}
+	
+	public void setDestinationRef(String destinationRef) {
+		String oldDestinationRef = this.destinationRef;
+		this.destinationRef = destinationRef;
+		propertyChangeSupport.firePropertyChange("destinationRef", oldDestinationRef, destinationRef);
 	}
 
 	public void addPropertyChangeListener(PropertyChangeListener listener) {

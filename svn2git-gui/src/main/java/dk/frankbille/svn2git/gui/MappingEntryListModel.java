@@ -17,7 +17,7 @@ public class MappingEntryListModel extends AbstractTableModel {
 
 	public MappingEntryListModel(Project project) {
 		this.project = project;
-		this.project.addPropertyChangeListener("trunkEntries", new PropertyChangeListener() {
+		this.project.addPropertyChangeListener("mappingEntries", new PropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
 				MappingEntryListModel.this.fireTableDataChanged();
@@ -32,7 +32,7 @@ public class MappingEntryListModel extends AbstractTableModel {
 
 	@Override
 	public int getColumnCount() {
-		return 3;
+		return 4;
 	}
 
 	@Override
@@ -44,6 +44,8 @@ public class MappingEntryListModel extends AbstractTableModel {
 			return "Source Path";
 		case 2:
 			return "Destination Path";
+		case 3:
+			return "Destination Ref";
 		}
 
 		return null;
@@ -65,6 +67,8 @@ public class MappingEntryListModel extends AbstractTableModel {
 			return mappingEntry.getSourcePath();
 		case 2:
 			return mappingEntry.getDestinationPath();
+		case 3:
+			return mappingEntry.getDestinationRef();
 		}
 
 		return null;
