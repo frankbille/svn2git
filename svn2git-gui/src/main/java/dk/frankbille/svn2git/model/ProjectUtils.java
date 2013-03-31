@@ -19,9 +19,9 @@ public final class ProjectUtils {
 		TypeDescription projectAuthorsDescription = new TypeDescription(Project.class);
 		projectAuthorsDescription.putMapPropertyType("authors", String.class, String.class);
 		constructor.addTypeDescription(projectAuthorsDescription);
-		TypeDescription projectTrunkEntriesDescription = new TypeDescription(Project.class);
-		projectTrunkEntriesDescription.putListPropertyType("trunkEntries", TrunkEntry.class);
-		constructor.addTypeDescription(projectTrunkEntriesDescription);
+		TypeDescription projectMappingEntriesDescription = new TypeDescription(Project.class);
+		projectMappingEntriesDescription.putListPropertyType("mappingEntries", MappingEntry.class);
+		constructor.addTypeDescription(projectMappingEntriesDescription);
 		DumperOptions dumperOptions = new DumperOptions();
 		dumperOptions.setPrettyFlow(true);
 		yaml = new Yaml(constructor, new Representer(), dumperOptions);

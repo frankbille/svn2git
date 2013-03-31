@@ -27,7 +27,7 @@ import org.tmatesoft.svn.core.wc.SVNLogClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNUpdateClient;
 
-import dk.frankbille.svn2git.model.TrunkEntry;
+import dk.frankbille.svn2git.model.MappingEntry;
 
 public class Converter {
 	
@@ -40,7 +40,7 @@ public class Converter {
 	
 	private SVNClientManager svnClient;
 	
-	private Set<TrunkEntry> trunkEntries = new HashSet<>();
+	private Set<MappingEntry> trunkEntries = new HashSet<>();
 	
 	private Properties authors;
 	
@@ -60,7 +60,7 @@ public class Converter {
 		SVNUpdateClient updateClient = svnClient.getUpdateClient();
 		
 		Set<String> trunkCheckoutPaths = new HashSet<>();
-		for (TrunkEntry trunkEntry : trunkEntries) {
+		for (MappingEntry trunkEntry : trunkEntries) {
 			trunkCheckoutPaths.add(trunkEntry.getCheckoutPath());
 		}
 		
@@ -138,7 +138,7 @@ public class Converter {
 			for (File file : files.keySet()) {
 				String operation = files.get(file);
 				String filePath = file.getAbsolutePath().replace(this.workspace.getAbsolutePath(), "");
-				TrunkEntry trunkEntry = getEntryForPath(filePath);
+				MappingEntry trunkEntry = getEntryForPath(filePath);
 				filePath = filePath.replace(trunkEntry.getSourcePath(), trunkEntry.getDestinationPath());
 				
 				if ("M".equals(operation)) {
@@ -171,8 +171,8 @@ public class Converter {
 		throw new IllegalArgumentException("Don't know how to handle "+svnType);
 	}
 	
-	private TrunkEntry getEntryForPath(String path) {
-		for (TrunkEntry trunkEntry : trunkEntries) {
+	private MappingEntry getEntryForPath(String path) {
+		for (MappingEntry trunkEntry : trunkEntries) {
 			if (path.startsWith(trunkEntry.getSourcePath())) {
 				return trunkEntry;
 			}
@@ -182,7 +182,7 @@ public class Converter {
 	}
 	
 	private boolean isPathIncluded(String path) {
-		for (TrunkEntry trunkEntry : trunkEntries) {
+		for (MappingEntry trunkEntry : trunkEntries) {
 			if (path.contains(trunkEntry.getSourcePath())) {
 				return true;
 			}

@@ -8,47 +8,47 @@ import java.util.Map;
 import javax.swing.AbstractListModel;
 
 import dk.frankbille.svn2git.model.Project;
-import dk.frankbille.svn2git.model.TrunkEntry;
+import dk.frankbille.svn2git.model.MappingEntry;
 
-public class TrunkEntryListModel extends AbstractListModel<TrunkEntry> {
+public class MappingEntryListModel extends AbstractListModel<MappingEntry> {
 	private static final long serialVersionUID = 1L;
 
 	private final Project project;
 
-	public TrunkEntryListModel(Project project) {
+	public MappingEntryListModel(Project project) {
 		this.project = project;
 		this.project.addPropertyChangeListener("trunkEntries", new PropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
-				TrunkEntryListModel.this.fireContentsChanged(TrunkEntryListModel.this, 0, TrunkEntryListModel.this.project.getTrunkEntries().size()-1);
+				MappingEntryListModel.this.fireContentsChanged(MappingEntryListModel.this, 0, MappingEntryListModel.this.project.getMappingEntries().size()-1);
 			}
 		});
 	}
 
 	@Override
 	public int getSize() {
-		return project.getTrunkEntries().size();
+		return project.getMappingEntries().size();
 	}
 
 	@Override
-	public TrunkEntry getElementAt(final int index) {
-		TrunkEntry trunkEntry = project.getTrunkEntries().get(index);
+	public MappingEntry getElementAt(final int index) {
+		MappingEntry trunkEntry = project.getMappingEntries().get(index);
 		trunkEntry.addPropertyChangeListener(new PropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
-				TrunkEntryListModel.this.fireContentsChanged(TrunkEntryListModel.this, index, index);
+				MappingEntryListModel.this.fireContentsChanged(MappingEntryListModel.this, index, index);
 			}
 		});
 		return trunkEntry;
 	}
 	
 	public void removeTrunkEntries(int... indices) {
-		Map<TrunkEntry, Integer> entriesToRemove = new HashMap<>();
+		Map<MappingEntry, Integer> entriesToRemove = new HashMap<>();
 		for (int selectedIndex : indices) {
 			entriesToRemove.put(getElementAt(selectedIndex), selectedIndex);
 		}
-		for (TrunkEntry trunkEntry : entriesToRemove.keySet()) {
-			project.removeTrunkEntry(trunkEntry);
+		for (MappingEntry trunkEntry : entriesToRemove.keySet()) {
+			project.removeMappingEntry(trunkEntry);
 			fireIntervalRemoved(this, entriesToRemove.get(trunkEntry), entriesToRemove.get(trunkEntry));
 		}
 	}

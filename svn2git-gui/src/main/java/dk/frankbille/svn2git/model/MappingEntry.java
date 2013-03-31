@@ -3,7 +3,7 @@ package dk.frankbille.svn2git.model;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
-public class TrunkEntry extends Entry {
+public class MappingEntry {
 
 	private String checkoutPath;
 	private String sourcePath;
@@ -11,14 +11,14 @@ public class TrunkEntry extends Entry {
 	
 	private PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 	
-	public TrunkEntry() {
+	public MappingEntry() {
 	}
 	
-	public TrunkEntry(String sourcePath, String destinationPath) {
+	public MappingEntry(String sourcePath, String destinationPath) {
 		this(sourcePath, sourcePath, destinationPath);
 	}
 	
-	public TrunkEntry(String checkoutPath, String sourcePath, String destinationPath) {
+	public MappingEntry(String checkoutPath, String sourcePath, String destinationPath) {
 		this.checkoutPath = checkoutPath;
 		this.sourcePath = sourcePath;
 		this.destinationPath = destinationPath;

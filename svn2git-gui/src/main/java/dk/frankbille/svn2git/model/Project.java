@@ -23,7 +23,7 @@ public class Project {
 	private long endRevision = 1;
 	private boolean endHeadRevision = true;
 	private SortedMap<String, String> authors = new TreeMap<>();
-	private List<TrunkEntry> trunkEntries = new ArrayList<>();
+	private List<MappingEntry> mappingEntries = new ArrayList<>();
 
 	public Project() {
 	}
@@ -107,24 +107,24 @@ public class Project {
 		this.authors = new TreeMap<>(authors);
 	}
 
-	public List<TrunkEntry> getTrunkEntries() {
-		return trunkEntries;
+	public List<MappingEntry> getMappingEntries() {
+		return mappingEntries;
 	}
 
-	public void setTrunkEntries(List<TrunkEntry> trunkEntries) {
-		this.trunkEntries = trunkEntries;
+	public void setMappingEntries(List<MappingEntry> mappingEntries) {
+		this.mappingEntries = mappingEntries;
 	}
 
-	public void addTrunkEntry(TrunkEntry trunkEntry) {
-		List<TrunkEntry> oldEntries = new ArrayList<>(trunkEntries);
-		trunkEntries.add(trunkEntry);
-		propertyChangeSupport.firePropertyChange("trunkEntries", oldEntries, trunkEntries);
+	public void addMappingEntry(MappingEntry mappingEntry) {
+		List<MappingEntry> oldEntries = new ArrayList<>(mappingEntries);
+		mappingEntries.add(mappingEntry);
+		propertyChangeSupport.firePropertyChange("mappingEntries", oldEntries, mappingEntries);
 	}
 
-	public void removeTrunkEntry(TrunkEntry trunkEntry) {
-		List<TrunkEntry> oldEntries = new ArrayList<>(trunkEntries);
-		trunkEntries.remove(trunkEntry);
-		propertyChangeSupport.firePropertyChange("trunkEntries", oldEntries, trunkEntries);
+	public void removeMappingEntry(MappingEntry mappingEntry) {
+		List<MappingEntry> oldEntries = new ArrayList<>(mappingEntries);
+		mappingEntries.remove(mappingEntry);
+		propertyChangeSupport.firePropertyChange("mappingEntries", oldEntries, mappingEntries);
 	}
 
 	public void updateAuthor(String existingSvnUsername, String newSvnUsername, String newGitAuthor) {

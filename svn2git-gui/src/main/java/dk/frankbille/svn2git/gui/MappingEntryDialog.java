@@ -15,9 +15,9 @@ import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.RowSpec;
 
-import dk.frankbille.svn2git.model.TrunkEntry;
+import dk.frankbille.svn2git.model.MappingEntry;
 
-public class TrunkEntryDialog extends JDialog {
+public class MappingEntryDialog extends JDialog {
 	private static final long serialVersionUID = 1L;
 
 	private final JPanel contentPanel = new JPanel();
@@ -31,7 +31,7 @@ public class TrunkEntryDialog extends JDialog {
 	/**
 	 * Create the dialog.
 	 */
-	public TrunkEntryDialog(final TrunkEntry trunkEntry) {
+	public MappingEntryDialog(final MappingEntry trunkEntry) {
 		setBounds(100, 100, 472, 202);
 		setModal(true);
 
@@ -97,7 +97,7 @@ public class TrunkEntryDialog extends JDialog {
 
 					okPressed = true;
 
-					TrunkEntryDialog.this.dispose();
+					MappingEntryDialog.this.dispose();
 				}
 			});
 			contentPanel.add(okButton, "5, 8");
@@ -106,7 +106,7 @@ public class TrunkEntryDialog extends JDialog {
 			JButton cancelButton = new JButton("Cancel");
 			cancelButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					TrunkEntryDialog.this.dispose();
+					MappingEntryDialog.this.dispose();
 				}
 			});
 			contentPanel.add(cancelButton, "7, 8");

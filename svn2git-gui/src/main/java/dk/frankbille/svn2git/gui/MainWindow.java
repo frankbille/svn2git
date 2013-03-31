@@ -47,11 +47,9 @@ import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.RowSpec;
 
-import dk.frankbille.svn2git.model.BranchEntry;
 import dk.frankbille.svn2git.model.Project;
 import dk.frankbille.svn2git.model.ProjectUtils;
-import dk.frankbille.svn2git.model.TagEntry;
-import dk.frankbille.svn2git.model.TrunkEntry;
+import dk.frankbille.svn2git.model.MappingEntry;
 
 public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -59,8 +57,8 @@ public class MainWindow extends JFrame {
 	private JTextField subversionUrlField;
 	private JTextField gitFastImportFileField;
 	private JTable authorsTable;
-	private JList<TrunkEntry> trunkEntryList;
-	private TrunkEntryListModel trunkEntryListModel;
+	private JList<MappingEntry> mappingEntryList;
+	private MappingEntryListModel trunkEntryListModel;
 	private final JPanel contentPanel = new JPanel();
 	private File projectFile;
 	private Project project;
@@ -202,18 +200,18 @@ public class MainWindow extends JFrame {
 
 		JLabel startRevisionLabel = new JLabel("Start revision");
 		generalPanel.add(startRevisionLabel, "2, 6, left, default");
-		
+
 		startRevisionField = new JSpinner();
 		startRevisionField.setEditor(new JSpinner.NumberEditor(startRevisionField));
 		generalPanel.add(startRevisionField, "4, 6");
-		
+
 		JLabel lblEndRevision = new JLabel("End revision");
 		generalPanel.add(lblEndRevision, "2, 8, left, default");
-		
+
 		endRevisionField = new JSpinner();
 		endRevisionField.setEditor(new JSpinner.NumberEditor(endRevisionField));
 		generalPanel.add(endRevisionField, "4, 8");
-		
+
 		endIsHead = new JCheckBox("HEAD");
 		endIsHead.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
@@ -254,106 +252,71 @@ public class MainWindow extends JFrame {
 				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,
 				RowSpec.decode("default:grow"),
-				FormFactory.RELATED_GAP_ROWSPEC,
-				FormFactory.DEFAULT_ROWSPEC,
-				FormFactory.RELATED_GAP_ROWSPEC,
-				RowSpec.decode("default:grow"),
-				FormFactory.RELATED_GAP_ROWSPEC,
-				FormFactory.DEFAULT_ROWSPEC,
-				FormFactory.RELATED_GAP_ROWSPEC,
-				RowSpec.decode("default:grow"),
 				FormFactory.RELATED_GAP_ROWSPEC,}));
 		// @formatter:on
 
-		JLabel trunkEntriesLabel = new JLabel("Trunk entries:");
-		mappingsPanel.add(trunkEntriesLabel, "2, 2");
+		JLabel mappingEntriesLabel = new JLabel("Mapping entries:");
+		mappingsPanel.add(mappingEntriesLabel, "2, 2");
 
-		JButton addTrunkEntry = new JButton("+");
-		addTrunkEntry.addActionListener(new ActionListener() {
+		JButton addMappingEntry = new JButton("+");
+		addMappingEntry.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				TrunkEntry newEntry = new TrunkEntry();
-				TrunkEntryDialog editDialog = new TrunkEntryDialog(newEntry);
+				MappingEntry newEntry = new MappingEntry();
+				MappingEntryDialog editDialog = new MappingEntryDialog(newEntry);
 				editDialog.setVisible(true);
 				if (editDialog.isOkPressed()) {
-					project.addTrunkEntry(newEntry);
+					project.addMappingEntry(newEntry);
 				}
 			}
 		});
-		addTrunkEntry.setToolTipText("Add new trunk mapping");
+		addMappingEntry.setToolTipText("Add new mapping mapping");
 		{
-			Dimension preferredSize = addTrunkEntry.getPreferredSize();
-			addTrunkEntry.setPreferredSize(new Dimension(45, preferredSize.height));
+			Dimension preferredSize = addMappingEntry.getPreferredSize();
+			addMappingEntry.setPreferredSize(new Dimension(45, preferredSize.height));
 		}
-		mappingsPanel.add(addTrunkEntry, "3, 2");
+		mappingsPanel.add(addMappingEntry, "3, 2");
 
-		final JButton removeTrunkEntry = new JButton("-");
-		removeTrunkEntry.addActionListener(new ActionListener() {
+		final JButton removeMappingEntry = new JButton("-");
+		removeMappingEntry.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				int[] selectedIndices = trunkEntryList.getSelectedIndices();
+				int[] selectedIndices = mappingEntryList.getSelectedIndices();
 				trunkEntryListModel.removeTrunkEntries(selectedIndices);
-				trunkEntryList.clearSelection();
+				mappingEntryList.clearSelection();
 			}
 		});
-		removeTrunkEntry.setEnabled(false);
-		removeTrunkEntry.setToolTipText("Remove selected trunk mapping");
+		removeMappingEntry.setEnabled(false);
+		removeMappingEntry.setToolTipText("Remove selected mapping entry");
 		{
-			Dimension preferredSize = removeTrunkEntry.getPreferredSize();
-			removeTrunkEntry.setPreferredSize(new Dimension(45, preferredSize.height));
+			Dimension preferredSize = removeMappingEntry.getPreferredSize();
+			removeMappingEntry.setPreferredSize(new Dimension(45, preferredSize.height));
 		}
-		mappingsPanel.add(removeTrunkEntry, "5, 2");
+		mappingsPanel.add(removeMappingEntry, "5, 2");
 
-		JScrollPane trunkEntryListScrollPane = new JScrollPane();
-		mappingsPanel.add(trunkEntryListScrollPane, "2, 4, 4, 1, fill, fill");
+		JScrollPane mappingEntryListScrollPane = new JScrollPane();
+		mappingsPanel.add(mappingEntryListScrollPane, "2, 4, 4, 1, fill, fill");
 
-		trunkEntryList = new JList<>();
-		trunkEntryList.addListSelectionListener(new ListSelectionListener() {
+		mappingEntryList = new JList<>();
+		mappingEntryList.addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				if (false == e.getValueIsAdjusting()) {
-					removeTrunkEntry.setEnabled(false == trunkEntryList.isSelectionEmpty());
+					removeMappingEntry.setEnabled(false == mappingEntryList.isSelectionEmpty());
 				}
 			}
 		});
-		trunkEntryList.addMouseListener(new MouseAdapter() {
+		mappingEntryList.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2) {
-					TrunkEntry selectedValue = trunkEntryList.getSelectedValue();
+					MappingEntry selectedValue = mappingEntryList.getSelectedValue();
 					if (selectedValue != null) {
-						TrunkEntryDialog editDialog = new TrunkEntryDialog(selectedValue);
+						MappingEntryDialog editDialog = new MappingEntryDialog(selectedValue);
 						editDialog.setVisible(true);
 					}
 				}
 			}
 		});
-		trunkEntryListScrollPane.setViewportView(trunkEntryList);
-
-		JLabel branchEntriesLabel = new JLabel("Branch entries:");
-		branchEntriesLabel.setToolTipText("Not implemented yet");
-		branchEntriesLabel.setEnabled(false);
-		mappingsPanel.add(branchEntriesLabel, "2, 6");
-
-		JScrollPane branchEntryListScrollPane = new JScrollPane();
-		branchEntryListScrollPane.setEnabled(false);
-		mappingsPanel.add(branchEntryListScrollPane, "2, 8, 4, 1, fill, fill");
-
-		JList<BranchEntry> branchEntryList = new JList<>();
-		branchEntryList.setToolTipText("Not implemented yet");
-		branchEntryList.setEnabled(false);
-		branchEntryListScrollPane.setViewportView(branchEntryList);
-
-		JLabel tagEntriesLabel = new JLabel("Tag entries:");
-		tagEntriesLabel.setEnabled(false);
-		mappingsPanel.add(tagEntriesLabel, "2, 10");
-
-		JScrollPane tagEntryListScrollPane = new JScrollPane();
-		tagEntryListScrollPane.setEnabled(false);
-		mappingsPanel.add(tagEntryListScrollPane, "2, 12, 4, 1, fill, fill");
-
-		JList<TagEntry> tagEntryList = new JList<>();
-		tagEntryList.setToolTipText("Not implemented yet");
-		tagEntryList.setEnabled(false);
-		tagEntryListScrollPane.setViewportView(tagEntryList);
+		mappingEntryListScrollPane.setViewportView(mappingEntryList);
 
 		JButton quitButton = new JButton("Quit");
 		quitButton.setEnabled(false);
@@ -429,12 +392,12 @@ public class MainWindow extends JFrame {
 		subversionUrlField.setText(project.getSvnUrl());
 		gitFastImportFileField.setText(project.getGitFastImportFile());
 		endIsHead.setSelected(project.isEndHeadRevision());
-		
+
 		new RevisionModel(true, project, startRevisionField);
 		new RevisionModel(false, project, endRevisionField);
 
-		trunkEntryListModel = new TrunkEntryListModel(project);
-		trunkEntryList.setModel(trunkEntryListModel);
+		trunkEntryListModel = new MappingEntryListModel(project);
+		mappingEntryList.setModel(trunkEntryListModel);
 
 		AuthorsTableModel authorsModel = new AuthorsTableModel(project);
 		authorsTable.setModel(authorsModel);
@@ -444,10 +407,10 @@ public class MainWindow extends JFrame {
 		List<SortKey> sortKeys = new ArrayList<>(sorter.getSortKeys());
 		sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
 		sorter.setSortKeys(sortKeys);
-		
+
 		setEndRevisionEnabledState();
 	}
-	
+
 	private void setEndRevisionEnabledState() {
 		endRevisionField.setEnabled(false == project.isEndHeadRevision());
 	}
