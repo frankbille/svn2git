@@ -116,11 +116,15 @@ public class Project {
 	}
 
 	public void addTrunkEntry(TrunkEntry trunkEntry) {
+		List<TrunkEntry> oldEntries = new ArrayList<>(trunkEntries);
 		trunkEntries.add(trunkEntry);
+		propertyChangeSupport.firePropertyChange("trunkEntries", oldEntries, trunkEntries);
 	}
 
 	public void removeTrunkEntry(TrunkEntry trunkEntry) {
+		List<TrunkEntry> oldEntries = new ArrayList<>(trunkEntries);
 		trunkEntries.remove(trunkEntry);
+		propertyChangeSupport.firePropertyChange("trunkEntries", oldEntries, trunkEntries);
 	}
 
 	public void updateAuthor(String existingSvnUsername, String newSvnUsername, String newGitAuthor) {

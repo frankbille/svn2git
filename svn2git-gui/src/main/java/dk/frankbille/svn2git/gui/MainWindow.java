@@ -7,6 +7,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -267,6 +269,16 @@ public class MainWindow extends JFrame {
 		mappingsPanel.add(trunkEntriesLabel, "2, 2");
 
 		JButton addTrunkEntry = new JButton("+");
+		addTrunkEntry.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				TrunkEntry newEntry = new TrunkEntry();
+				TrunkEntryDialog editDialog = new TrunkEntryDialog(newEntry);
+				editDialog.setVisible(true);
+				if (editDialog.isOkPressed()) {
+					project.addTrunkEntry(newEntry);
+				}
+			}
+		});
 		addTrunkEntry.setToolTipText("Add new trunk mapping");
 		{
 			Dimension preferredSize = addTrunkEntry.getPreferredSize();
@@ -299,6 +311,18 @@ public class MainWindow extends JFrame {
 			public void valueChanged(ListSelectionEvent e) {
 				if (false == e.getValueIsAdjusting()) {
 					removeTrunkEntry.setEnabled(false == trunkEntryList.isSelectionEmpty());
+				}
+			}
+		});
+		trunkEntryList.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2) {
+					TrunkEntry selectedValue = trunkEntryList.getSelectedValue();
+					if (selectedValue != null) {
+						TrunkEntryDialog editDialog = new TrunkEntryDialog(selectedValue);
+						editDialog.setVisible(true);
+					}
 				}
 			}
 		});

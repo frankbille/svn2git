@@ -1,5 +1,7 @@
 package dk.frankbille.svn2git.gui;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +17,12 @@ public class TrunkEntryListModel extends AbstractListModel<TrunkEntry> {
 
 	public TrunkEntryListModel(Project project) {
 		this.project = project;
+		this.project.addPropertyChangeListener("trunkEntries", new PropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+				TrunkEntryListModel.this.fireContentsChanged(TrunkEntryListModel.this, 0, TrunkEntryListModel.this.project.getTrunkEntries().size()-1);
+			}
+		});
 	}
 
 	@Override
@@ -23,8 +31,15 @@ public class TrunkEntryListModel extends AbstractListModel<TrunkEntry> {
 	}
 
 	@Override
-	public TrunkEntry getElementAt(int index) {
-		return project.getTrunkEntries().get(index);
+	public TrunkEntry getElementAt(final int index) {
+		TrunkEntry trunkEntry = project.getTrunkEntries().get(index);
+		trunkEntry.addPropertyChangeListener(new PropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+				TrunkEntryListModel.this.fireContentsChanged(TrunkEntryListModel.this, index, index);
+			}
+		});
+		return trunkEntry;
 	}
 	
 	public void removeTrunkEntries(int... indices) {
