@@ -17,7 +17,7 @@ public class ConsoleConversionListener implements ConversionListener {
 	}
 
 	@Override
-	public void gitFastImportFileChanged(File gitFastImportFile) {
+	public void gitFastImportFileChanged(File gitFastImportFile, int numberOfBytesAppended) {
 		System.out.println("Git fast-import file changed. File size: "+gitFastImportFile.length());
 	}
 

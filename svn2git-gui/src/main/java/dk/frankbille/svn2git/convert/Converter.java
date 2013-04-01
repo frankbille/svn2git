@@ -40,6 +40,8 @@ public class Converter {
 	
 	private List<ConversionListener> conversionListeners = new ArrayList<>();
 	
+	private boolean run = true;
+	
 	public Converter(Project project) {
 		this.project = project;
 		svnClient = SVNClientManager.newInstance();
@@ -54,15 +56,33 @@ public class Converter {
 			endRevision = project.getEndRevision();
 		}
 		
-		for (long currentRevision = startRevision; currentRevision <= endRevision; currentRevision++) {
+		for (long currentRevision = startRevision; currentRevision <= endRevision && run; currentRevision++) {
 			SVNRevision revision = SVNRevision.create(currentRevision);
 			
+			// Find out which mapping entries is covered by the revision
+			final Set<MappingEntry> revisionEntries = new HashSet<>();
+			SVNURL svnUrl = SVNURL.parseURIEncoded(project.getSvnUrl());
+			svnClient.getLogClient().doLog(svnUrl, new String[]{"/"}, revision, revision, revision, false, true, 0, new ISVNLogEntryHandler() {
+				@Override
+				public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
+					Map<String, SVNLogEntryPath> changedPaths = logEntry.getChangedPaths();
+					for (String changedPath : changedPaths.keySet()) {
+						MappingEntry entry = getEntryForPath(changedPath);
+						if (entry != null) {
+							revisionEntries.add(entry);
+						}
+					}
+				}
+			});
+			
 			for (MappingEntry mappingEntry : project.getMappingEntries()) {
-				checkoutOrUpdateMappingEntry(mappingEntry, revision);
+				if (revisionEntries.contains(mappingEntry)) {
+					checkoutOrUpdateMappingEntry(mappingEntry, revision);
+				}
 				fireMappingEntryUpdated(mappingEntry, currentRevision);
 			}
 			
-			processWorkspace(revision);
+			processWorkspace(revision, revisionEntries);
 			fireRevisionProcessed(currentRevision);
 		}
 		
@@ -75,6 +95,10 @@ public class Converter {
 	
 	public void removeConversionListener(ConversionListener conversionListener) {
 		conversionListeners.remove(conversionListener);
+	}
+	
+	public void stop() {
+		run = false;
 	}
 	
 	private void checkoutOrUpdateMappingEntry(MappingEntry mappingEntry, SVNRevision revision) throws SVNException, IOException {		
@@ -101,10 +125,10 @@ public class Converter {
 		}
 	}
 	
-	private void processWorkspace(final SVNRevision revision) throws SVNException, IOException {
+	private void processWorkspace(final SVNRevision revision, Set<MappingEntry> revisionEntries) throws SVNException, IOException {
 		// For each destination ref
 		Map<String, Set<MappingEntry>> destinationRefs = new HashMap<>();
-		for (MappingEntry mappingEntry : project.getMappingEntries()) {
+		for (MappingEntry mappingEntry : revisionEntries) {
 			Set<MappingEntry> destinationRefEntries = destinationRefs.get(mappingEntry.getDestinationRef());
 			if (destinationRefEntries == null) {
 				destinationRefEntries = new HashSet<>();
@@ -217,12 +241,12 @@ public class Converter {
 	
 	private void appendToFastImportFile(CharSequence text) throws IOException {
 		IOUtils.write(text, getGitFastImportFileOutputStream(), "UTF-8");
-		fireGitFastImportFileChanged();
+		fireGitFastImportFileChanged(text.toString().getBytes("UTF-8").length);
 	}
 	
 	private void appendToFastImportFile(File file) throws IOException {
-		IOUtils.copy(new FileInputStream(file), getGitFastImportFileOutputStream());
-		fireGitFastImportFileChanged();
+		int bytesCopied = IOUtils.copy(new FileInputStream(file), getGitFastImportFileOutputStream());
+		fireGitFastImportFileChanged(bytesCopied);
 	}
 	
 	private OutputStream getGitFastImportFileOutputStream() throws FileNotFoundException {
@@ -249,9 +273,9 @@ public class Converter {
 		}
 	}
 	
-	private void fireGitFastImportFileChanged() {
+	private void fireGitFastImportFileChanged(int numberOfBytesAppended) {
 		for (ConversionListener conversionListener : conversionListeners) {
-			conversionListener.gitFastImportFileChanged(new File(project.getGitFastImportFile()));
+			conversionListener.gitFastImportFileChanged(new File(project.getGitFastImportFile()), numberOfBytesAppended);
 		}
 	}
 }

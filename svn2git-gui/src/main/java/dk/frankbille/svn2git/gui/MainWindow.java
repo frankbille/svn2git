@@ -146,6 +146,7 @@ public class MainWindow extends JFrame {
 		subversionUrlField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
+				project.setSvnUrl(subversionUrlField.getText());
 			}
 
 			@Override
@@ -155,6 +156,7 @@ public class MainWindow extends JFrame {
 
 			@Override
 			public void changedUpdate(DocumentEvent e) {
+				project.setSvnUrl(subversionUrlField.getText());
 			}
 		});
 		generalPanel.add(subversionUrlField, "4, 2, 5, 1, fill, default");
@@ -167,6 +169,7 @@ public class MainWindow extends JFrame {
 		gitFastImportFileField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
+				project.setGitFastImportFile(gitFastImportFileField.getText());
 			}
 
 			@Override
@@ -176,6 +179,7 @@ public class MainWindow extends JFrame {
 
 			@Override
 			public void changedUpdate(DocumentEvent e) {
+				project.setGitFastImportFile(gitFastImportFileField.getText());
 			}
 		});
 		generalPanel.add(gitFastImportFileField, "4, 4, 3, 1, fill, default");
@@ -209,6 +213,7 @@ public class MainWindow extends JFrame {
 		workspaceField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
+				project.setWorkspaceFolder(workspaceField.getText());
 			}
 
 			@Override
@@ -218,6 +223,7 @@ public class MainWindow extends JFrame {
 
 			@Override
 			public void changedUpdate(DocumentEvent e) {
+				project.setWorkspaceFolder(workspaceField.getText());
 			}
 		});
 		generalPanel.add(workspaceField, "4, 6, 3, 1, fill, default");
@@ -319,7 +325,8 @@ public class MainWindow extends JFrame {
 		});
 		authorsTableScrollPane.setViewportView(authorsTable);
 
-		JButton addAuthorMappingButton = new JButton("+");
+		JButton addAuthorMappingButton = new JButton();
+		addAuthorMappingButton.setIcon(new ImageIcon(MainWindow.class.getResource("/plus.png")));
 		addAuthorMappingButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				AuthorMapping newEntry = new AuthorMapping();
@@ -332,7 +339,8 @@ public class MainWindow extends JFrame {
 		});
 		authorsPanel.add(addAuthorMappingButton, "3, 4");
 
-		removeAuthorMappingButton = new JButton("-");
+		removeAuthorMappingButton = new JButton();
+		removeAuthorMappingButton.setIcon(new ImageIcon(MainWindow.class.getResource("/minus.png")));
 		removeAuthorMappingButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int[] selectedViewRows = authorsTable.getSelectedRows();
@@ -401,7 +409,8 @@ public class MainWindow extends JFrame {
 		});
 		mappingEntryListScrollPane.setViewportView(mappingEntryList);
 
-		JButton addMappingEntry = new JButton("+");
+		JButton addMappingEntry = new JButton();
+		addMappingEntry.setIcon(new ImageIcon(MainWindow.class.getResource("/plus.png")));
 		addMappingEntry.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				MappingEntry newEntry = new MappingEntry();
@@ -415,7 +424,8 @@ public class MainWindow extends JFrame {
 		addMappingEntry.setToolTipText("Add new mapping mapping");
 		mappingsPanel.add(addMappingEntry, "3, 4");
 
-		removeMappingEntry = new JButton("-");
+		removeMappingEntry = new JButton();
+		removeMappingEntry.setIcon(new ImageIcon(MainWindow.class.getResource("/minus.png")));
 		removeMappingEntry.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int[] selectedViewRows = mappingEntryList.getSelectedRows();

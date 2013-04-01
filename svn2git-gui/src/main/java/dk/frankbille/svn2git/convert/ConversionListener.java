@@ -10,6 +10,6 @@ public interface ConversionListener {
 	
 	void mappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber);
 	
-	void gitFastImportFileChanged(File gitFastImportFile);
+	void gitFastImportFileChanged(File gitFastImportFile, int numberOfBytesAppended);
 	
 }
