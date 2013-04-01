@@ -19,6 +19,7 @@ public class Project {
 
 	private String svnUrl;
 	private String gitFastImportFile;
+	private String workspaceFolder;
 	private long startRevision = 1;
 	private long endRevision = 1;
 	private boolean endHeadRevision = true;
@@ -46,6 +47,16 @@ public class Project {
 		final String oldGitFastImportFile = this.gitFastImportFile;
 		this.gitFastImportFile = gitFastImportFile;
 		propertyChangeSupport.firePropertyChange("gitFastImportFile", oldGitFastImportFile, gitFastImportFile);
+	}
+	
+	public String getWorkspaceFolder() {
+		return workspaceFolder;
+	}
+	
+	public void setWorkspaceFolder(String workspaceFolder) {
+		String oldWorkspaceFolder = this.workspaceFolder;
+		this.workspaceFolder = workspaceFolder;
+		propertyChangeSupport.firePropertyChange("workspaceFolder", oldWorkspaceFolder, workspaceFolder);
 	}
 
 	public long getStartRevision() {

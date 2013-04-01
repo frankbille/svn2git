@@ -64,6 +64,7 @@ public class MainWindow extends JFrame {
 	private JSpinner endRevisionField;
 	private JSpinner startRevisionField;
 	private JCheckBox endIsHead;
+	private JTextField workspaceField;
 
 	/**
 	 * Launch the application.
@@ -98,8 +99,6 @@ public class MainWindow extends JFrame {
 				ColumnSpec.decode("default:grow"),
 				FormFactory.RELATED_GAP_COLSPEC,
 				FormFactory.BUTTON_COLSPEC,
-				FormFactory.RELATED_GAP_COLSPEC,
-				FormFactory.BUTTON_COLSPEC,
 				FormFactory.RELATED_GAP_COLSPEC,},
 			new RowSpec[] {
 				RowSpec.decode("default:grow"),
@@ -109,7 +108,7 @@ public class MainWindow extends JFrame {
 		// @formatter:on
 
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		contentPanel.add(tabbedPane, "1, 1, 9, 1, fill, fill");
+		contentPanel.add(tabbedPane, "1, 1, 7, 1, fill, fill");
 
 		JPanel generalPanel = new JPanel();
 		tabbedPane.addTab("General", null, generalPanel, null);
@@ -118,13 +117,15 @@ public class MainWindow extends JFrame {
 				FormFactory.RELATED_GAP_COLSPEC,
 				ColumnSpec.decode("left:default"),
 				FormFactory.LABEL_COMPONENT_GAP_COLSPEC,
-				FormFactory.BUTTON_COLSPEC,
+				FormFactory.GROWING_BUTTON_COLSPEC,
 				FormFactory.RELATED_GAP_COLSPEC,
 				ColumnSpec.decode("default:grow"),
 				FormFactory.RELATED_GAP_COLSPEC,
 				FormFactory.DEFAULT_COLSPEC,
 				FormFactory.RELATED_GAP_COLSPEC,},
 			new RowSpec[] {
+				FormFactory.RELATED_GAP_ROWSPEC,
+				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,
 				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,
@@ -197,19 +198,61 @@ public class MainWindow extends JFrame {
 		});
 		generalPanel.add(locateGitFastImportFileButton, "8, 4");
 
+		JLabel workspaceLabel = new JLabel("Workspace");
+		workspaceLabel.setToolTipText("The folder where the subversion locations will be checked out and processed.");
+		generalPanel.add(workspaceLabel, "2, 6, left, default");
+
+		workspaceField = new JTextField();
+		workspaceField.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+			}
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				project.setWorkspaceFolder(workspaceField.getText());
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+			}
+		});
+		generalPanel.add(workspaceField, "4, 6, 3, 1, fill, default");
+		workspaceField.setColumns(10);
+
+		JButton locateWorkspaceButton = new JButton("...");
+		{
+			Dimension preferredSize = locateWorkspaceButton.getPreferredSize();
+			locateWorkspaceButton.setPreferredSize(new Dimension(45, preferredSize.height));
+		}
+		locateWorkspaceButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser workspaceChooser = new JFileChooser();
+				workspaceChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				workspaceChooser.setMultiSelectionEnabled(false);
+				if (StringUtils.isNotEmpty(project.getWorkspaceFolder())) {
+					workspaceChooser.setSelectedFile(new File(project.getWorkspaceFolder()));
+				}
+				if (workspaceChooser.showDialog(MainWindow.this, "Select") == JFileChooser.APPROVE_OPTION) {
+					workspaceField.setText(workspaceChooser.getSelectedFile().getAbsolutePath());
+				}
+			}
+		});
+		generalPanel.add(locateWorkspaceButton, "8, 6");
+
 		JLabel startRevisionLabel = new JLabel("Start revision");
-		generalPanel.add(startRevisionLabel, "2, 6, left, default");
+		generalPanel.add(startRevisionLabel, "2, 8, left, default");
 
 		startRevisionField = new JSpinner();
 		startRevisionField.setEditor(new JSpinner.NumberEditor(startRevisionField));
-		generalPanel.add(startRevisionField, "4, 6");
+		generalPanel.add(startRevisionField, "4, 8");
 
 		JLabel lblEndRevision = new JLabel("End revision");
-		generalPanel.add(lblEndRevision, "2, 8, left, default");
+		generalPanel.add(lblEndRevision, "2, 10, left, default");
 
 		endRevisionField = new JSpinner();
 		endRevisionField.setEditor(new JSpinner.NumberEditor(endRevisionField));
-		generalPanel.add(endRevisionField, "4, 8");
+		generalPanel.add(endRevisionField, "4, 10");
 
 		endIsHead = new JCheckBox("HEAD");
 		endIsHead.addItemListener(new ItemListener() {
@@ -218,7 +261,7 @@ public class MainWindow extends JFrame {
 				setEndRevisionEnabledState();
 			}
 		});
-		generalPanel.add(endIsHead, "6, 8");
+		generalPanel.add(endIsHead, "6, 10");
 
 		JPanel authorsPanel = new JPanel();
 		tabbedPane.addTab("Authors", null, authorsPanel, null);
@@ -326,15 +369,9 @@ public class MainWindow extends JFrame {
 		quitButton.setIcon(new ImageIcon(MainWindow.class.getResource("/door-open-in.png")));
 		contentPanel.add(quitButton, "2, 3");
 
-		JButton testButton = new JButton("Test");
-		testButton.setToolTipText("Not implemented yet");
-		testButton.setEnabled(false);
-		testButton.setIcon(new ImageIcon(MainWindow.class.getResource("/target.png")));
-		contentPanel.add(testButton, "6, 3");
-
 		JButton executeButton = new JButton("Execute");
 		executeButton.setIcon(new ImageIcon(MainWindow.class.getResource("/control.png")));
-		contentPanel.add(executeButton, "8, 3");
+		contentPanel.add(executeButton, "6, 3");
 
 		JToolBar toolBar = new JToolBar();
 		toolBar.setFloatable(false);
@@ -393,6 +430,7 @@ public class MainWindow extends JFrame {
 
 		subversionUrlField.setText(project.getSvnUrl());
 		gitFastImportFileField.setText(project.getGitFastImportFile());
+		workspaceField.setText(project.getWorkspaceFolder());
 		endIsHead.setSelected(project.isEndHeadRevision());
 
 		new RevisionModel(true, project, startRevisionField);
