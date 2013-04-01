@@ -3,6 +3,7 @@ package dk.frankbille.svn2git.gui;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.table.AbstractTableModel;
@@ -13,21 +14,49 @@ import dk.frankbille.svn2git.model.Project;
 public class MappingEntryListModel extends AbstractTableModel {
 	private static final long serialVersionUID = 1L;
 
-	private final Project project;
+	private class MappingEntryChangeListener implements PropertyChangeListener {
+		@Override
+		public void propertyChange(PropertyChangeEvent evt) {
+			MappingEntry mappingEntry = (MappingEntry) evt.getSource();
+			int index = project.getMappingEntries().indexOf(mappingEntry);
+			if (index > -1) {
+				fireTableRowsUpdated(index, index);
+			} else {
+				fireTableDataChanged();
+			}
+		}
+	}
 
-	public MappingEntryListModel(Project project) {
+	private Project project;
+	
+	private final MappingEntryChangeListener mappingEntryChangeListener;
+
+	public MappingEntryListModel() {
+		this.mappingEntryChangeListener = new MappingEntryChangeListener();
+	}
+
+	public void setProject(Project project) {
 		this.project = project;
+		
 		this.project.addPropertyChangeListener("mappingEntries", new PropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
-				MappingEntryListModel.this.fireTableDataChanged();
+				List<MappingEntry> mappingEntries = MappingEntryListModel.this.project.getMappingEntries();
+				for (MappingEntry mappingEntry : mappingEntries) {
+					mappingEntry.removePropertyChangeListener(mappingEntryChangeListener);
+					mappingEntry.addPropertyChangeListener(mappingEntryChangeListener);
+				}
+				
+				fireTableDataChanged();
 			}
 		});
+		
+		fireTableDataChanged();
 	}
 
 	@Override
 	public int getRowCount() {
-		return project.getMappingEntries().size();
+		return project != null ? project.getMappingEntries().size() : 0;
 	}
 
 	@Override
@@ -54,12 +83,6 @@ public class MappingEntryListModel extends AbstractTableModel {
 	@Override
 	public Object getValueAt(final int rowIndex, int columnIndex) {
 		MappingEntry mappingEntry = project.getMappingEntries().get(rowIndex);
-		mappingEntry.addPropertyChangeListener(new PropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-				MappingEntryListModel.this.fireTableRowsUpdated(rowIndex, rowIndex);
-			}
-		});
 		switch (columnIndex) {
 		case 0:
 			return mappingEntry.getCheckoutPath();
@@ -81,8 +104,8 @@ public class MappingEntryListModel extends AbstractTableModel {
 		}
 		for (MappingEntry trunkEntry : entriesToRemove.keySet()) {
 			project.removeMappingEntry(trunkEntry);
-			fireTableRowsDeleted(entriesToRemove.get(trunkEntry), entriesToRemove.get(trunkEntry));
 		}
+		fireTableDataChanged();
 	}
 
 }

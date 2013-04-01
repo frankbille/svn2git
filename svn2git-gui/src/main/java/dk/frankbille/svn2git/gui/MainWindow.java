@@ -27,7 +27,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
-import javax.swing.ListSelectionModel;
 import javax.swing.RowSorter;
 import javax.swing.RowSorter.SortKey;
 import javax.swing.SortOrder;
@@ -46,6 +45,7 @@ import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.RowSpec;
 
+import dk.frankbille.svn2git.model.AuthorMapping;
 import dk.frankbille.svn2git.model.MappingEntry;
 import dk.frankbille.svn2git.model.Project;
 import dk.frankbille.svn2git.model.ProjectUtils;
@@ -65,6 +65,9 @@ public class MainWindow extends JFrame {
 	private JSpinner startRevisionField;
 	private JCheckBox endIsHead;
 	private JTextField workspaceField;
+	private JButton removeMappingEntry;
+	private JButton removeAuthorMappingButton;
+	private AuthorsTableModel authorsModel;
 
 	/**
 	 * Launch the application.
@@ -269,17 +272,80 @@ public class MainWindow extends JFrame {
 		authorsPanel.setLayout(new FormLayout(new ColumnSpec[] {
 				FormFactory.RELATED_GAP_COLSPEC,
 				ColumnSpec.decode("default:grow"),
+				FormFactory.DEFAULT_COLSPEC,
+				FormFactory.RELATED_GAP_COLSPEC,
+				FormFactory.DEFAULT_COLSPEC,
 				FormFactory.RELATED_GAP_COLSPEC,},
 			new RowSpec[] {
 				FormFactory.RELATED_GAP_ROWSPEC,
 				RowSpec.decode("default:grow"),
+				FormFactory.RELATED_GAP_ROWSPEC,
+				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,}));
 		// @formatter:on
 
 		JScrollPane authorsTableScrollPane = new JScrollPane();
-		authorsPanel.add(authorsTableScrollPane, "2, 2, fill, fill");
+		authorsPanel.add(authorsTableScrollPane, "2, 2, 4, 1, fill, fill");
 		authorsTable = new JTable();
+		authorsModel = new AuthorsTableModel();
+		authorsTable.setModel(authorsModel);
+		TableRowSorter<AuthorsTableModel> authorSorter = new TableRowSorter<AuthorsTableModel>(authorsModel);
+		authorsTable.setRowSorter(authorSorter);
+		List<SortKey> authorSortKeys = new ArrayList<>(authorSorter.getSortKeys());
+		authorSortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
+		authorSorter.setSortKeys(authorSortKeys);
+		authorsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				if (false == e.getValueIsAdjusting()) {
+					removeAuthorMappingButton.setEnabled(authorsTable.getSelectedRowCount() > 0);
+				}
+			}
+		});
+		authorsTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2) {
+					int selectedRow = authorsTable.getSelectedRow();
+					if (selectedRow > -1) {
+						AuthorMapping selectedValue = project.getAuthors().get(authorsTable.convertRowIndexToModel(selectedRow));
+						if (selectedValue != null) {
+							AuthorMappingDialog editDialog = new AuthorMappingDialog(selectedValue);
+							editDialog.setVisible(true);
+						}
+					}
+				}
+			}
+		});
 		authorsTableScrollPane.setViewportView(authorsTable);
+
+		JButton addAuthorMappingButton = new JButton("+");
+		addAuthorMappingButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				AuthorMapping newEntry = new AuthorMapping();
+				AuthorMappingDialog editDialog = new AuthorMappingDialog(newEntry);
+				editDialog.setVisible(true);
+				if (editDialog.isOkPressed()) {
+					project.addAuthor(newEntry);
+				}
+			}
+		});
+		authorsPanel.add(addAuthorMappingButton, "3, 4");
+
+		removeAuthorMappingButton = new JButton("-");
+		removeAuthorMappingButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int[] selectedViewRows = authorsTable.getSelectedRows();
+				int[] selectedModelRows = new int[selectedViewRows.length];
+				for (int i = 0; i < selectedViewRows.length; i++) {
+					selectedModelRows[i] = authorsTable.convertRowIndexToModel(selectedViewRows[i]);
+				}
+				authorsModel.removeAuthors(selectedModelRows);
+				authorsTable.clearSelection();
+			}
+		});
+		removeAuthorMappingButton.setEnabled(false);
+		authorsPanel.add(removeAuthorMappingButton, "5, 4");
 		tabbedPane.addTab("Mappings", null, mappingsPanel, null);
 		// @formatter:off
 		mappingsPanel.setLayout(new FormLayout(new ColumnSpec[] {
@@ -297,47 +363,19 @@ public class MainWindow extends JFrame {
 				FormFactory.RELATED_GAP_ROWSPEC,}));
 		// @formatter:on
 
-		JLabel mappingEntriesLabel = new JLabel("Mapping entries:");
-		mappingsPanel.add(mappingEntriesLabel, "2, 2");
-
-		JButton addMappingEntry = new JButton("+");
-		addMappingEntry.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				MappingEntry newEntry = new MappingEntry();
-				MappingEntryDialog editDialog = new MappingEntryDialog(newEntry);
-				editDialog.setVisible(true);
-				if (editDialog.isOkPressed()) {
-					project.addMappingEntry(newEntry);
-				}
-			}
-		});
-		addMappingEntry.setToolTipText("Add new mapping mapping");
-		{
-			Dimension preferredSize = addMappingEntry.getPreferredSize();
-			addMappingEntry.setPreferredSize(new Dimension(45, preferredSize.height));
-		}
-		mappingsPanel.add(addMappingEntry, "3, 2");
-
-		final JButton removeMappingEntry = new JButton("-");
-		removeMappingEntry.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				int[] selectedRows = mappingEntryList.getSelectedRows();
-				mappingEntryListModel.removeMappingEntries(selectedRows);
-				mappingEntryList.clearSelection();
-			}
-		});
-		removeMappingEntry.setEnabled(false);
-		removeMappingEntry.setToolTipText("Remove selected mapping entry");
-		{
-			Dimension preferredSize = removeMappingEntry.getPreferredSize();
-			removeMappingEntry.setPreferredSize(new Dimension(45, preferredSize.height));
-		}
-		mappingsPanel.add(removeMappingEntry, "5, 2");
-
 		JScrollPane mappingEntryListScrollPane = new JScrollPane();
-		mappingsPanel.add(mappingEntryListScrollPane, "2, 4, 4, 1, fill, fill");
+		mappingsPanel.add(mappingEntryListScrollPane, "2, 2, 4, 1, fill, fill");
 
 		mappingEntryList = new JTable();
+		mappingEntryListModel = new MappingEntryListModel();
+		mappingEntryList.setModel(mappingEntryListModel);
+		TableRowSorter<MappingEntryListModel> mappingEntrySorter = new TableRowSorter<MappingEntryListModel>(mappingEntryListModel);
+		mappingEntryList.setRowSorter(mappingEntrySorter);
+		List<SortKey> sortKeys = new ArrayList<>(mappingEntrySorter.getSortKeys());
+		sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
+		sortKeys.add(new RowSorter.SortKey(1, SortOrder.ASCENDING));
+		sortKeys.add(new RowSorter.SortKey(2, SortOrder.ASCENDING));
+		mappingEntrySorter.setSortKeys(sortKeys);
 		mappingEntryList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
@@ -352,7 +390,7 @@ public class MainWindow extends JFrame {
 				if (e.getClickCount() == 2) {
 					int selectedRow = mappingEntryList.getSelectedRow();
 					if (selectedRow > -1) {
-						MappingEntry selectedValue = project.getMappingEntries().get(selectedRow);
+						MappingEntry selectedValue = project.getMappingEntries().get(mappingEntryList.convertRowIndexToModel(selectedRow));
 						if (selectedValue != null) {
 							MappingEntryDialog editDialog = new MappingEntryDialog(selectedValue);
 							editDialog.setVisible(true);
@@ -362,6 +400,35 @@ public class MainWindow extends JFrame {
 			}
 		});
 		mappingEntryListScrollPane.setViewportView(mappingEntryList);
+
+		JButton addMappingEntry = new JButton("+");
+		addMappingEntry.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				MappingEntry newEntry = new MappingEntry();
+				MappingEntryDialog editDialog = new MappingEntryDialog(newEntry);
+				editDialog.setVisible(true);
+				if (editDialog.isOkPressed()) {
+					project.addMappingEntry(newEntry);
+				}
+			}
+		});
+		addMappingEntry.setToolTipText("Add new mapping mapping");
+		mappingsPanel.add(addMappingEntry, "3, 4");
+
+		removeMappingEntry = new JButton("-");
+		removeMappingEntry.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int[] selectedViewRows = mappingEntryList.getSelectedRows();
+				int[] selectedModelRows = new int[selectedViewRows.length];
+				for (int i = 0; i < selectedViewRows.length; i++) {
+					selectedModelRows[i] = mappingEntryList.convertRowIndexToModel(selectedViewRows[i]);
+				}
+				mappingEntryListModel.removeMappingEntries(selectedModelRows);
+			}
+		});
+		removeMappingEntry.setEnabled(false);
+		removeMappingEntry.setToolTipText("Remove selected mapping entry");
+		mappingsPanel.add(removeMappingEntry, "5, 4");
 
 		JButton quitButton = new JButton("Quit");
 		quitButton.setEnabled(false);
@@ -435,18 +502,9 @@ public class MainWindow extends JFrame {
 
 		new RevisionModel(true, project, startRevisionField);
 		new RevisionModel(false, project, endRevisionField);
-
-		mappingEntryListModel = new MappingEntryListModel(project);
-		mappingEntryList.setModel(mappingEntryListModel);
-
-		AuthorsTableModel authorsModel = new AuthorsTableModel(project);
-		authorsTable.setModel(authorsModel);
-		authorsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		TableRowSorter<AuthorsTableModel> sorter = new TableRowSorter<AuthorsTableModel>(authorsModel);
-		authorsTable.setRowSorter(sorter);
-		List<SortKey> sortKeys = new ArrayList<>(sorter.getSortKeys());
-		sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
-		sorter.setSortKeys(sortKeys);
+		
+		authorsModel.setProject(project);
+		mappingEntryListModel.setProject(project);
 
 		setEndRevisionEnabledState();
 	}

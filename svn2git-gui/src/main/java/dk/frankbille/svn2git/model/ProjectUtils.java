@@ -17,7 +17,7 @@ public final class ProjectUtils {
 	static {
 		Constructor constructor = new Constructor(Project.class);
 		TypeDescription projectAuthorsDescription = new TypeDescription(Project.class);
-		projectAuthorsDescription.putMapPropertyType("authors", String.class, String.class);
+		projectAuthorsDescription.putListPropertyType("authors", AuthorMapping.class);
 		constructor.addTypeDescription(projectAuthorsDescription);
 		TypeDescription projectMappingEntriesDescription = new TypeDescription(Project.class);
 		projectMappingEntriesDescription.putListPropertyType("mappingEntries", MappingEntry.class);

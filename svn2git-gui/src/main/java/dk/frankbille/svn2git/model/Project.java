@@ -6,10 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
 import java.util.StringTokenizer;
-import java.util.TreeMap;
 
 import org.apache.commons.io.IOUtils;
 
@@ -23,7 +20,7 @@ public class Project {
 	private long startRevision = 1;
 	private long endRevision = 1;
 	private boolean endHeadRevision = true;
-	private SortedMap<String, String> authors = new TreeMap<>();
+	private List<AuthorMapping> authors = new ArrayList<>();
 	private List<MappingEntry> mappingEntries = new ArrayList<>();
 
 	public Project() {
@@ -106,16 +103,28 @@ public class Project {
 			StringTokenizer lineTokenizer = new StringTokenizer(line, "=");
 			String svnUsername = lineTokenizer.nextToken().trim();
 			String gitAuthor = lineTokenizer.nextToken().trim();
-			updateAuthor(null, svnUsername, gitAuthor);
+			addAuthor(new AuthorMapping(svnUsername, gitAuthor));
 		}
 	}
 
-	public Map<String, String> getAuthors() {
+	public List<AuthorMapping> getAuthors() {
 		return authors;
 	}
 
-	public void setAuthors(Map<String, String> authors) {
-		this.authors = new TreeMap<>(authors);
+	public void setAuthors(List<AuthorMapping> authors) {
+		this.authors = authors;
+	}
+	
+	public void addAuthor(AuthorMapping authorMapping) {
+		List<AuthorMapping> oldAuthors = new ArrayList<>(authors);
+		authors.add(authorMapping);
+		propertyChangeSupport.firePropertyChange("authors", oldAuthors, authors);
+	}
+
+	public void removeAuthor(AuthorMapping authorMapping) {
+		List<AuthorMapping> oldAuthors = new ArrayList<>(authors);
+		authors.remove(authorMapping);
+		propertyChangeSupport.firePropertyChange("authors", oldAuthors, authors);
 	}
 
 	public List<MappingEntry> getMappingEntries() {
@@ -136,13 +145,6 @@ public class Project {
 		List<MappingEntry> oldEntries = new ArrayList<>(mappingEntries);
 		mappingEntries.remove(mappingEntry);
 		propertyChangeSupport.firePropertyChange("mappingEntries", oldEntries, mappingEntries);
-	}
-
-	public void updateAuthor(String existingSvnUsername, String newSvnUsername, String newGitAuthor) {
-		String existingGitAuthor = authors.get(existingSvnUsername);
-		authors.remove(existingSvnUsername);
-		authors.put(newSvnUsername, newGitAuthor);
-		propertyChangeSupport.firePropertyChange("authors", existingSvnUsername + ":" + existingGitAuthor, newSvnUsername + ":" + newGitAuthor);
 	}
 
 	public void addPropertyChangeListener(PropertyChangeListener listener) {
