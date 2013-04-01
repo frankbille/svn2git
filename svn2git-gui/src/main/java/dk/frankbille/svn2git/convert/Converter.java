@@ -6,8 +6,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -36,6 +38,8 @@ public class Converter {
 
 	private FileOutputStream gitFastImportFileOutputStream;
 	
+	private List<ConversionListener> conversionListeners = new ArrayList<>();
+	
 	public Converter(Project project) {
 		this.project = project;
 		svnClient = SVNClientManager.newInstance();
@@ -52,16 +56,25 @@ public class Converter {
 		
 		for (long currentRevision = startRevision; currentRevision <= endRevision; currentRevision++) {
 			SVNRevision revision = SVNRevision.create(currentRevision);
-			System.out.println("Processing revision: "+revision);
 			
 			for (MappingEntry mappingEntry : project.getMappingEntries()) {
 				checkoutOrUpdateMappingEntry(mappingEntry, revision);
+				fireMappingEntryUpdated(mappingEntry);
 			}
 			
 			processWorkspace(revision);
+			fireRevisionProcessed(currentRevision);
 		}
 		
 		IOUtils.closeQuietly(gitFastImportFileOutputStream);
+	}
+	
+	public void addConversionListener(ConversionListener conversionListener) {
+		conversionListeners.add(conversionListener);
+	}
+	
+	public void removeConversionListener(ConversionListener conversionListener) {
+		conversionListeners.remove(conversionListener);
 	}
 	
 	private void checkoutOrUpdateMappingEntry(MappingEntry mappingEntry, SVNRevision revision) throws SVNException, IOException {		
@@ -72,9 +85,7 @@ public class Converter {
 		
 		if (mappingEntryWorkspace.exists()) {
 			try {
-				System.out.println("Starting to update "+mappingEntry.getSourcePath());
 				updateClient.doUpdate(mappingEntryWorkspace, revision, SVNDepth.INFINITY, true, true);
-				System.out.println("Update completed of "+mappingEntry.getSourcePath());
 			} catch (SVNException e) {
 				// Suppress
 				FileUtils.deleteDirectory(mappingEntryWorkspace);
@@ -82,9 +93,7 @@ public class Converter {
 		} else {
 			mappingEntryWorkspace.mkdirs();
 			try {
-				System.out.println("Starting to checkout "+mappingEntry.getSourcePath());
 				updateClient.doCheckout(svnUrl.appendPath(mappingEntry.getSourcePath(), true), mappingEntryWorkspace, revision, revision, SVNDepth.INFINITY, true);
-				System.out.println("Checkout completed of "+mappingEntry.getSourcePath());
 			} catch (SVNException e) {
 				// Suppress
 				FileUtils.deleteDirectory(mappingEntryWorkspace);
@@ -165,8 +174,6 @@ public class Converter {
 						appendNewlineToFastImportFile();
 					}
 				}
-			} else {
-				System.out.println("Nothing to convert for revision: "+revision);
 			}
 		}
 	}
@@ -204,16 +211,18 @@ public class Converter {
 		return false;
 	}
 	
-	private void appendToFastImportFile(CharSequence text) throws IOException {
-		IOUtils.write(text, getGitFastImportFileOutputStream(), "UTF-8");
-	}
-	
 	private void appendNewlineToFastImportFile() throws IOException {
 		appendToFastImportFile("\n");
 	}
 	
+	private void appendToFastImportFile(CharSequence text) throws IOException {
+		IOUtils.write(text, getGitFastImportFileOutputStream(), "UTF-8");
+		fireGitFastImportFileChanged();
+	}
+	
 	private void appendToFastImportFile(File file) throws IOException {
 		IOUtils.copy(new FileInputStream(file), getGitFastImportFileOutputStream());
+		fireGitFastImportFileChanged();
 	}
 	
 	private OutputStream getGitFastImportFileOutputStream() throws FileNotFoundException {
@@ -226,5 +235,23 @@ public class Converter {
 	
 	private String getGitAuthor(String svnUsername) throws FileNotFoundException, IOException {
 		return project.getGitAuthor(svnUsername);
+	}
+	
+	private void fireRevisionProcessed(long revisionNumber) {
+		for (ConversionListener conversionListener : conversionListeners) {
+			conversionListener.revisionProcessed(revisionNumber);
+		}
+	}
+	
+	private void fireMappingEntryUpdated(MappingEntry mappingEntry) {
+		for (ConversionListener conversionListener : conversionListeners) {
+			conversionListener.mappingEntryUpdated(mappingEntry);
+		}
+	}
+	
+	private void fireGitFastImportFileChanged() {
+		for (ConversionListener conversionListener : conversionListeners) {
+			conversionListener.gitFastImportFileChanged(new File(project.getGitFastImportFile()));
+		}
 	}
 }
