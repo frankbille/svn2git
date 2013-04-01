@@ -14,8 +14,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tmatesoft.svn.core.ISVNLogEntryHandler;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
@@ -33,6 +34,8 @@ import dk.frankbille.svn2git.model.Project;
 
 public class Converter {
 	
+	private static final Logger log = LoggerFactory.getLogger(Converter.class);
+	
 	private final Project project;
 	private final SVNClientManager svnClient;
 
@@ -47,7 +50,7 @@ public class Converter {
 		svnClient = SVNClientManager.newInstance();
 	}
 	
-	public void convert() throws Exception {
+	public void convert() throws SVNException, IOException {
 		long startRevision = project.getStartRevision();
 		long endRevision;
 		if (project.isEndHeadRevision()) {
@@ -56,34 +59,48 @@ public class Converter {
 			endRevision = project.getEndRevision();
 		}
 		
-		for (long currentRevision = startRevision; currentRevision <= endRevision && run; currentRevision++) {
-			SVNRevision revision = SVNRevision.create(currentRevision);
-			
-			// Find out which mapping entries is covered by the revision
-			final Set<MappingEntry> revisionEntries = new HashSet<>();
-			SVNURL svnUrl = SVNURL.parseURIEncoded(project.getSvnUrl());
-			svnClient.getLogClient().doLog(svnUrl, new String[]{"/"}, revision, revision, revision, false, true, 0, new ISVNLogEntryHandler() {
-				@Override
-				public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
-					Map<String, SVNLogEntryPath> changedPaths = logEntry.getChangedPaths();
-					for (String changedPath : changedPaths.keySet()) {
-						MappingEntry entry = getEntryForPath(changedPath);
-						if (entry != null) {
-							revisionEntries.add(entry);
+		try {
+			for (long currentRevision = startRevision; currentRevision <= endRevision && run; currentRevision++) {
+				SVNRevision revision = SVNRevision.create(currentRevision);
+				
+				log.info("Handling Subversion revision: "+currentRevision);
+				
+				// Find out which mapping entries is covered by the revision
+				final Set<MappingEntry> revisionEntries = new HashSet<>();
+				SVNURL svnUrl = SVNURL.parseURIEncoded(project.getSvnUrl());
+				svnClient.getLogClient().doLog(svnUrl, new String[]{"/"}, revision, revision, revision, false, true, 0, new ISVNLogEntryHandler() {
+					@Override
+					public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
+						Map<String, SVNLogEntryPath> changedPaths = logEntry.getChangedPaths();
+						for (String changedPath : changedPaths.keySet()) {
+							MappingEntry entry = getEntryForPath(changedPath);
+							if (entry != null) {
+								revisionEntries.add(entry);
+							}
 						}
 					}
+				});
+				
+				if (revisionEntries.isEmpty() && log.isDebugEnabled()) {
+					log.debug("Nothing to convert");
 				}
-			});
-			
-			for (MappingEntry mappingEntry : project.getMappingEntries()) {
-				if (revisionEntries.contains(mappingEntry)) {
-					checkoutOrUpdateMappingEntry(mappingEntry, revision);
+				
+				for (MappingEntry mappingEntry : project.getMappingEntries()) {
+					if (revisionEntries.contains(mappingEntry)) {
+						checkoutOrUpdateMappingEntry(mappingEntry, revision);
+					}
+					fireMappingEntryUpdated(mappingEntry, currentRevision);
 				}
-				fireMappingEntryUpdated(mappingEntry, currentRevision);
+				
+				processWorkspace(revision, revisionEntries);
+				fireRevisionProcessed(currentRevision);
 			}
-			
-			processWorkspace(revision, revisionEntries);
-			fireRevisionProcessed(currentRevision);
+		} catch (SVNException e) {
+			log.error(e.getMessage(), e);
+			throw e;
+		} catch (IOException e) {
+			log.error(e.getMessage(), e);
+			throw e;
 		}
 		
 		IOUtils.closeQuietly(gitFastImportFileOutputStream);
@@ -108,20 +125,10 @@ public class Converter {
 		File mappingEntryWorkspace = new File(project.getWorkspaceFolder(), mappingEntry.getSourcePath());
 		
 		if (mappingEntryWorkspace.exists()) {
-			try {
-				updateClient.doUpdate(mappingEntryWorkspace, revision, SVNDepth.INFINITY, true, true);
-			} catch (SVNException e) {
-				// Suppress
-				FileUtils.deleteDirectory(mappingEntryWorkspace);
-			}
+			updateClient.doUpdate(mappingEntryWorkspace, revision, SVNDepth.INFINITY, true, true);
 		} else {
 			mappingEntryWorkspace.mkdirs();
-			try {
-				updateClient.doCheckout(svnUrl.appendPath(mappingEntry.getSourcePath(), true), mappingEntryWorkspace, revision, revision, SVNDepth.INFINITY, true);
-			} catch (SVNException e) {
-				// Suppress
-				FileUtils.deleteDirectory(mappingEntryWorkspace);
-			}
+			updateClient.doCheckout(svnUrl.appendPath(mappingEntry.getSourcePath(), true), mappingEntryWorkspace, revision, revision, SVNDepth.INFINITY, true);
 		}
 	}
 	
@@ -164,7 +171,7 @@ public class Converter {
 						}
 					});
 				} catch (SVNException e) {
-					// Suppress
+					log.error("Suppressed exception", e);
 				}
 			}
 			
