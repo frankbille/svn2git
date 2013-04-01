@@ -12,7 +12,7 @@ public class ConsoleConversionListener implements ConversionListener {
 	}
 
 	@Override
-	public void mappingEntryUpdated(MappingEntry mappingEntry) {
+	public void mappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber) {
 		System.out.println("Finished updating for the mapping entry: "+mappingEntry.getSourcePath());
 	}
 

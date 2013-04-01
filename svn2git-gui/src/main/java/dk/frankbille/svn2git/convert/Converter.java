@@ -59,7 +59,7 @@ public class Converter {
 			
 			for (MappingEntry mappingEntry : project.getMappingEntries()) {
 				checkoutOrUpdateMappingEntry(mappingEntry, revision);
-				fireMappingEntryUpdated(mappingEntry);
+				fireMappingEntryUpdated(mappingEntry, currentRevision);
 			}
 			
 			processWorkspace(revision);
@@ -243,9 +243,9 @@ public class Converter {
 		}
 	}
 	
-	private void fireMappingEntryUpdated(MappingEntry mappingEntry) {
+	private void fireMappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber) {
 		for (ConversionListener conversionListener : conversionListeners) {
-			conversionListener.mappingEntryUpdated(mappingEntry);
+			conversionListener.mappingEntryUpdated(mappingEntry, revisionNumber);
 		}
 	}
 	

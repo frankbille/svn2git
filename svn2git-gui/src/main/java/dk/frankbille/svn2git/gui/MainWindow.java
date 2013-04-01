@@ -437,6 +437,12 @@ public class MainWindow extends JFrame {
 		contentPanel.add(quitButton, "2, 3");
 
 		JButton executeButton = new JButton("Execute");
+		executeButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				ConverterDialog converterDialog = new ConverterDialog(project);
+				converterDialog.setVisible(true);
+			}
+		});
 		executeButton.setIcon(new ImageIcon(MainWindow.class.getResource("/control.png")));
 		contentPanel.add(executeButton, "6, 3");
 

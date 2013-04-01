@@ -8,7 +8,7 @@ public interface ConversionListener {
 	
 	void revisionProcessed(long revisionNumber);
 	
-	void mappingEntryUpdated(MappingEntry mappingEntry);
+	void mappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber);
 	
 	void gitFastImportFileChanged(File gitFastImportFile);
 	
