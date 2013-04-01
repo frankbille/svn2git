@@ -111,8 +111,7 @@ public class ConverterDialog extends JDialog {
 			public void gitFastImportFileChanged(File gitFastImportFile, int numberOfBytesAppended) {
 				gitFastImportFileLength += numberOfBytesAppended;
 
-				String fileSize = NumberFormat.getIntegerInstance().format(gitFastImportFileLength);
-				gitFastimportFilesizeOutput.setText(fileSize + " bytes (" + humanReadableByteCount(gitFastImportFileLength, false) + ")");
+				updateGitFastImportFilesizeLabel();
 
 			}
 		});
@@ -126,6 +125,7 @@ public class ConverterDialog extends JDialog {
 			}
 		});
 		changeActionButton();
+		updateGitFastImportFilesizeLabel();
 	}
 
 	private void changeActionButton() {
@@ -172,6 +172,11 @@ public class ConverterDialog extends JDialog {
 		for (ActionListener actionListener : actionListeners) {
 			actionButton.removeActionListener(actionListener);
 		}
+	}
+
+	private void updateGitFastImportFilesizeLabel() {
+		String fileSize = NumberFormat.getIntegerInstance().format(gitFastImportFileLength);
+		gitFastimportFilesizeOutput.setText(fileSize + " bytes (" + humanReadableByteCount(gitFastImportFileLength, false) + ")");
 	}
 
 	private static String humanReadableByteCount(long bytes, boolean si) {
