@@ -127,6 +127,15 @@ public class Project {
 		propertyChangeSupport.firePropertyChange("authors", oldAuthors, authors);
 	}
 
+	public String getGitAuthor(String svnUsername) {
+		for (AuthorMapping authorMapping : authors) {
+			if (svnUsername.equals(authorMapping.getSvnUsername())) {
+				return authorMapping.getGitAuthor();
+			}
+		}
+		return null;
+	}
+
 	public List<MappingEntry> getMappingEntries() {
 		return mappingEntries;
 	}

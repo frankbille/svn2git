@@ -4,13 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
@@ -28,133 +27,147 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNUpdateClient;
 
 import dk.frankbille.svn2git.model.MappingEntry;
+import dk.frankbille.svn2git.model.Project;
 
 public class Converter {
 	
-	private final SVNURL svnUrl;
-	private final File workspace;
-	private final File usersFile;
-	private final File gitFastImportFile;
-	
+	private final Project project;
+	private final SVNClientManager svnClient;
+
 	private FileOutputStream gitFastImportFileOutputStream;
 	
-	private SVNClientManager svnClient;
-	
-	private Set<MappingEntry> trunkEntries = new HashSet<>();
-	
-	private Properties authors;
-	
-	public Converter(SVNURL svnUrl, File workspace, File usersFile, File gitFastImportFile) {
-		this.svnUrl = svnUrl;
-		this.workspace = workspace;
-		this.usersFile = usersFile;
-		this.gitFastImportFile = gitFastImportFile;
-
+	public Converter(Project project) {
+		this.project = project;
 		svnClient = SVNClientManager.newInstance();
 	}
 	
 	public void convert() throws Exception {
-		long startRevision = 4398;
-		long endRevision = 10000;
-		
-		SVNUpdateClient updateClient = svnClient.getUpdateClient();
-		
-		Set<String> trunkCheckoutPaths = new HashSet<>();
-		for (MappingEntry trunkEntry : trunkEntries) {
-			trunkCheckoutPaths.add(trunkEntry.getCheckoutPath());
+		long startRevision = project.getStartRevision();
+		long endRevision;
+		if (project.isEndHeadRevision()) {
+			throw new UnsupportedOperationException("Not implemented yet");
+		} else {
+			endRevision = project.getEndRevision();
 		}
 		
 		for (long currentRevision = startRevision; currentRevision <= endRevision; currentRevision++) {
 			SVNRevision revision = SVNRevision.create(currentRevision);
 			System.out.println("Processing revision: "+revision);
 			
-			for (String trunkCheckoutPath : trunkCheckoutPaths) {
-				File trunkWorkspace = new File(workspace, trunkCheckoutPath);
-				if (trunkWorkspace.exists()) {
-					try {
-						System.out.println("Starting to update "+trunkCheckoutPath);
-						updateClient.doUpdate(trunkWorkspace, revision, SVNDepth.INFINITY, true, true);
-						System.out.println("Update completed of "+trunkCheckoutPath);
-						processWorkspace(trunkWorkspace, revision);
-					} catch (SVNException e) {
-						System.out.println("Nothing to update on "+trunkCheckoutPath);
-						// Suppress
-						FileUtils.deleteDirectory(trunkWorkspace);
-					}
-				} else {
-					trunkWorkspace.mkdirs();
-					try {
-						System.out.println("Starting to checkout "+trunkCheckoutPath);
-						updateClient.doCheckout(svnUrl.appendPath(trunkCheckoutPath, true), trunkWorkspace, revision, revision, SVNDepth.INFINITY, true);
-						System.out.println("Checkout completed of "+trunkCheckoutPath);
-						processWorkspace(trunkWorkspace, revision);
-					} catch (SVNException e) {
-						// Suppress
-						System.out.println("Nothing to checkout on "+trunkCheckoutPath);
-						FileUtils.deleteDirectory(trunkWorkspace);
-					}
-				}				
+			for (MappingEntry mappingEntry : project.getMappingEntries()) {
+				checkoutOrUpdateMappingEntry(mappingEntry, revision);
 			}
+			
+			processWorkspace(revision);
 		}
 		
 		IOUtils.closeQuietly(gitFastImportFileOutputStream);
 	}
 	
-	private void processWorkspace(final File workspace, final SVNRevision revision) throws SVNException, IOException {
-		final Commit commit = new Commit();
+	private void checkoutOrUpdateMappingEntry(MappingEntry mappingEntry, SVNRevision revision) throws SVNException, IOException {		
+		SVNUpdateClient updateClient = svnClient.getUpdateClient();
+		SVNURL svnUrl = SVNURL.parseURIEncoded(project.getSvnUrl());
 		
-		SVNLogClient logClient = svnClient.getLogClient();
-		logClient.doLog(new File[]{workspace}, revision, revision, false, true, 0, new ISVNLogEntryHandler() {
-			@Override
-			public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
-				commit.setAuthor(logEntry.getAuthor());
-				commit.setCommitDate(logEntry.getDate());
-				commit.setCommitMessage(logEntry.getMessage());
-				
-				Map<String, SVNLogEntryPath> changedPaths = logEntry.getChangedPaths();
-				for (Entry<String, SVNLogEntryPath> changedPathEntries : changedPaths.entrySet()) {
-					String changedPath = changedPathEntries.getKey();
-					SVNLogEntryPath svnLogEntryPath = changedPathEntries.getValue();
-					
-					if (svnLogEntryPath.getKind().equals(SVNNodeKind.FILE) && isPathIncluded(changedPath)) {
-						commit.addFile(new File(Converter.this.workspace, changedPath), getOperation(svnLogEntryPath.getType()));
-					}
-				}
-			}
-		});
+		File mappingEntryWorkspace = new File(project.getWorkspaceFolder(), mappingEntry.getSourcePath());
 		
-		Map<File, String> files = commit.getFiles();
-		if (false == files.isEmpty()) {
-			appendToFastImportFile("commit refs/heads/master");
-			appendNewlineToFastImportFile();
-			appendToFastImportFile("mark :"+revision.getNumber());
-			appendNewlineToFastImportFile();
-			appendToFastImportFile("committer "+getGitAuthor(commit.getAuthor())+" "+commit.getCommitDate().getTime()/1000+" +0100");
-			appendNewlineToFastImportFile();
-			appendToFastImportFile("data "+commit.getCommitMessage().getBytes().length);
-			appendNewlineToFastImportFile();
-			appendToFastImportFile(commit.getCommitMessage());
-			appendNewlineToFastImportFile();
-			for (File file : files.keySet()) {
-				String operation = files.get(file);
-				String filePath = file.getAbsolutePath().replace(this.workspace.getAbsolutePath(), "");
-				MappingEntry trunkEntry = getEntryForPath(filePath);
-				filePath = filePath.replace(trunkEntry.getSourcePath(), trunkEntry.getDestinationPath());
-				
-				if ("M".equals(operation)) {
-					appendToFastImportFile("M 644 inline "+filePath);
-					appendNewlineToFastImportFile();
-					appendToFastImportFile("data "+file.length());
-					appendNewlineToFastImportFile();
-					appendToFastImportFile(file);
-					appendNewlineToFastImportFile();
-				} else if ("D".equals(operation)) {
-					appendToFastImportFile("D "+filePath);
-					appendNewlineToFastImportFile();
-				}
+		if (mappingEntryWorkspace.exists()) {
+			try {
+				System.out.println("Starting to update "+mappingEntry.getSourcePath());
+				updateClient.doUpdate(mappingEntryWorkspace, revision, SVNDepth.INFINITY, true, true);
+				System.out.println("Update completed of "+mappingEntry.getSourcePath());
+			} catch (SVNException e) {
+				// Suppress
+				FileUtils.deleteDirectory(mappingEntryWorkspace);
 			}
 		} else {
-			System.out.println("Nothing to convert for revision: "+revision);
+			mappingEntryWorkspace.mkdirs();
+			try {
+				System.out.println("Starting to checkout "+mappingEntry.getSourcePath());
+				updateClient.doCheckout(svnUrl.appendPath(mappingEntry.getSourcePath(), true), mappingEntryWorkspace, revision, revision, SVNDepth.INFINITY, true);
+				System.out.println("Checkout completed of "+mappingEntry.getSourcePath());
+			} catch (SVNException e) {
+				// Suppress
+				FileUtils.deleteDirectory(mappingEntryWorkspace);
+			}
+		}
+	}
+	
+	private void processWorkspace(final SVNRevision revision) throws SVNException, IOException {
+		// For each destination ref
+		Map<String, Set<MappingEntry>> destinationRefs = new HashMap<>();
+		for (MappingEntry mappingEntry : project.getMappingEntries()) {
+			Set<MappingEntry> destinationRefEntries = destinationRefs.get(mappingEntry.getDestinationRef());
+			if (destinationRefEntries == null) {
+				destinationRefEntries = new HashSet<>();
+				destinationRefs.put(mappingEntry.getDestinationRef(), destinationRefEntries);
+			}
+			destinationRefEntries.add(mappingEntry);
+		}
+		
+		for (String destinationRef : destinationRefs.keySet()) {
+			final Commit commit = new Commit();
+			
+			SVNLogClient logClient = svnClient.getLogClient();
+			for (MappingEntry mappingEntry : destinationRefs.get(destinationRef)) {
+				File mappingEntryWorkspace = new File(project.getWorkspaceFolder(), mappingEntry.getSourcePath());
+				
+				try {
+					logClient.doLog(new File[]{mappingEntryWorkspace}, revision, revision, false, true, 0, new ISVNLogEntryHandler() {
+						@Override
+						public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
+							commit.setAuthor(logEntry.getAuthor());
+							commit.setCommitDate(logEntry.getDate());
+							commit.setCommitMessage(logEntry.getMessage());
+							
+							Map<String, SVNLogEntryPath> changedPaths = logEntry.getChangedPaths();
+							for (Entry<String, SVNLogEntryPath> changedPathEntries : changedPaths.entrySet()) {
+								String changedPath = changedPathEntries.getKey();
+								SVNLogEntryPath svnLogEntryPath = changedPathEntries.getValue();
+								
+								if (svnLogEntryPath.getKind().equals(SVNNodeKind.FILE) && isPathIncluded(changedPath)) {
+									commit.addFile(new File(project.getWorkspaceFolder(), changedPath), getOperation(svnLogEntryPath.getType()));
+								}
+							}
+						}
+					});
+				} catch (SVNException e) {
+					// Suppress
+				}
+			}
+			
+			Map<File, String> files = commit.getFiles();
+			if (false == files.isEmpty()) {
+				appendToFastImportFile("commit "+destinationRef);
+				appendNewlineToFastImportFile();
+				appendToFastImportFile("mark :"+revision.getNumber());
+				appendNewlineToFastImportFile();
+				appendToFastImportFile("committer "+getGitAuthor(commit.getAuthor())+" "+commit.getCommitDate().getTime()/1000+" +0100");
+				appendNewlineToFastImportFile();
+				appendToFastImportFile("data "+commit.getCommitMessage().getBytes("UTF-8").length);
+				appendNewlineToFastImportFile();
+				appendToFastImportFile(commit.getCommitMessage());
+				appendNewlineToFastImportFile();
+				for (File file : files.keySet()) {
+					String operation = files.get(file);
+					String filePath = file.getAbsolutePath().replace(project.getWorkspaceFolder(), "");
+					MappingEntry mappingEntry = getEntryForPath(filePath);
+					filePath = filePath.replace(mappingEntry.getSourcePath(), mappingEntry.getDestinationPath());
+					
+					if ("M".equals(operation)) {
+						appendToFastImportFile("M 644 inline "+filePath);
+						appendNewlineToFastImportFile();
+						appendToFastImportFile("data "+file.length());
+						appendNewlineToFastImportFile();
+						appendToFastImportFile(file);
+						appendNewlineToFastImportFile();
+					} else if ("D".equals(operation)) {
+						appendToFastImportFile("D "+filePath);
+						appendNewlineToFastImportFile();
+					}
+				}
+			} else {
+				System.out.println("Nothing to convert for revision: "+revision);
+			}
 		}
 	}
 	
@@ -172,9 +185,9 @@ public class Converter {
 	}
 	
 	private MappingEntry getEntryForPath(String path) {
-		for (MappingEntry trunkEntry : trunkEntries) {
-			if (path.startsWith(trunkEntry.getSourcePath())) {
-				return trunkEntry;
+		for (MappingEntry mappingEntry : project.getMappingEntries()) {
+			if (path.startsWith(mappingEntry.getSourcePath())) {
+				return mappingEntry;
 			}
 		}
 		
@@ -182,8 +195,8 @@ public class Converter {
 	}
 	
 	private boolean isPathIncluded(String path) {
-		for (MappingEntry trunkEntry : trunkEntries) {
-			if (path.contains(trunkEntry.getSourcePath())) {
+		for (MappingEntry mappingEntry : project.getMappingEntries()) {
+			if (path.contains(mappingEntry.getSourcePath())) {
 				return true;
 			}
 		}
@@ -192,7 +205,7 @@ public class Converter {
 	}
 	
 	private void appendToFastImportFile(CharSequence text) throws IOException {
-		IOUtils.write(text, getGitFastImportFileOutputStream());
+		IOUtils.write(text, getGitFastImportFileOutputStream(), "UTF-8");
 	}
 	
 	private void appendNewlineToFastImportFile() throws IOException {
@@ -205,18 +218,13 @@ public class Converter {
 	
 	private OutputStream getGitFastImportFileOutputStream() throws FileNotFoundException {
 		if (gitFastImportFileOutputStream == null) {
-			gitFastImportFileOutputStream = new FileOutputStream(gitFastImportFile, true);
+			gitFastImportFileOutputStream = new FileOutputStream(project.getGitFastImportFile(), true);
 		}
 		
 		return gitFastImportFileOutputStream;
 	}
 	
-	private String getGitAuthor(String svnAuthor) throws FileNotFoundException, IOException {
-		if (authors == null) {
-			authors = new Properties();
-			authors.load(new FileReader(usersFile));
-		}
-		
-		return authors.getProperty(svnAuthor);
+	private String getGitAuthor(String svnUsername) throws FileNotFoundException, IOException {
+		return project.getGitAuthor(svnUsername);
 	}
 }
