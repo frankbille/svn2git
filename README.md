@@ -25,6 +25,17 @@ To use you have two options:
       ```mvn package```
    4. Run application  
       ```java -jar svn2git-gui/target/svn2git.jar```
+      
+
+Caveat
+------
+
+I have not been able to run it successfully on Windows. The last error I got was related
+to SVNKit not being able to do an update of the workspace because it couldn't delete a
+file!?! I'm not putting more energy into that platform at the moment, as it is working
+fine and faster on my Mac.
+If anyone ever want's to use this tool on Windows, please let me know or even
+better: Fork, fix and submit a pull request.
 
 
 Licenses and attributions

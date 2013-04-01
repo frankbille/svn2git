@@ -35,6 +35,19 @@ import dk.frankbille.svn2git.model.Project;
 public class Converter {
 
 	private static final Logger log = LoggerFactory.getLogger(Converter.class);
+	
+	private static class RevisionHandler implements ISVNLogEntryHandler {
+		private long revision = -1;
+		
+		@Override
+		public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
+			revision = logEntry.getRevision();
+		}
+		
+		public long getRevision() {
+			return revision;
+		}
+	}
 
 	private final Project project;
 	private final SVNClientManager svnClient;
@@ -45,16 +58,22 @@ public class Converter {
 
 	private boolean run = true;
 
+	private SVNURL svnUrl;
+
 	public Converter(Project project) {
 		this.project = project;
 		svnClient = SVNClientManager.newInstance();
 	}
 
 	public void convert() throws SVNException, IOException {
+		svnUrl = SVNURL.parseURIEncoded(project.getSvnUrl());
+
 		long startRevision = project.getStartRevision();
 		long endRevision;
 		if (project.isEndHeadRevision()) {
-			throw new UnsupportedOperationException("Not implemented yet");
+			RevisionHandler headRevisionHandler = new RevisionHandler();
+			svnClient.getLogClient().doLog(svnUrl, new String[] { "/" }, SVNRevision.HEAD, SVNRevision.HEAD, SVNRevision.HEAD, false, true, 0, headRevisionHandler);
+			endRevision = headRevisionHandler.getRevision();
 		} else {
 			endRevision = project.getEndRevision();
 		}
@@ -67,7 +86,6 @@ public class Converter {
 
 				// Find out which mapping entries is covered by the revision
 				final Set<MappingEntry> revisionEntries = new HashSet<>();
-				SVNURL svnUrl = SVNURL.parseURIEncoded(project.getSvnUrl());
 				svnClient.getLogClient().doLog(svnUrl, new String[] { "/" }, revision, revision, revision, false, true, 0, new ISVNLogEntryHandler() {
 					@Override
 					public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
@@ -120,7 +138,6 @@ public class Converter {
 
 	private void checkoutOrUpdateMappingEntry(MappingEntry mappingEntry, SVNRevision revision) throws SVNException, IOException {
 		SVNUpdateClient updateClient = svnClient.getUpdateClient();
-		SVNURL svnUrl = SVNURL.parseURIEncoded(project.getSvnUrl());
 
 		File mappingEntryWorkspace = new File(project.getWorkspaceFolder(), mappingEntry.getSourcePath());
 
