@@ -132,9 +132,9 @@ public class Converter {
 		} catch (IOException e) {
 			log.error(e.getMessage(), e);
 			throw e;
+		} finally {
+			IOUtils.closeQuietly(gitFastImportFileOutputStream);
 		}
-
-		IOUtils.closeQuietly(gitFastImportFileOutputStream);
 	}
 
 	public void addConversionListener(ConversionListener conversionListener) {
@@ -289,8 +289,14 @@ public class Converter {
 	}
 
 	private void appendToFastImportFile(File file) throws IOException {
-		int bytesCopied = IOUtils.copy(new FileInputStream(file), getGitFastImportFileOutputStream());
-		fireGitFastImportFileChanged(bytesCopied);
+		FileInputStream fileInputStream = null;
+		try {
+			fileInputStream = new FileInputStream(file);
+			int bytesCopied = IOUtils.copy(fileInputStream, getGitFastImportFileOutputStream());
+			fireGitFastImportFileChanged(bytesCopied);
+		} finally {
+			IOUtils.closeQuietly(fileInputStream);
+		}
 	}
 
 	private OutputStream getGitFastImportFileOutputStream() throws FileNotFoundException {
