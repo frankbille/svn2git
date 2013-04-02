@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -99,8 +101,15 @@ public class Converter {
 					}
 				});
 
-				if (revisionEntries.isEmpty() && log.isDebugEnabled()) {
-					log.debug("Nothing to convert");
+				if (log.isDebugEnabled()) {
+					if (revisionEntries.isEmpty()) {
+						log.debug("Nothing to convert");
+					} else {
+						log.debug("These entries will be processed in this revision:");
+						for (MappingEntry mappingEntry : revisionEntries) {
+							log.debug(mappingEntry.toString());
+						}
+					}
 				}
 
 				for (MappingEntry mappingEntry : project.getMappingEntries()) {
@@ -241,12 +250,18 @@ public class Converter {
 	}
 
 	private MappingEntry getEntryForPath(String path) {
-		for (MappingEntry mappingEntry : project.getMappingEntries()) {
+		List<MappingEntry> mappingEntries = new ArrayList<>(project.getMappingEntries());
+		Collections.sort(mappingEntries, new Comparator<MappingEntry>() {
+			@Override
+			public int compare(MappingEntry o1, MappingEntry o2) {
+				return o2.getSourcePath().compareTo(o1.getSourcePath());
+			}
+		});
+		for (MappingEntry mappingEntry : mappingEntries) {
 			if (path.startsWith(mappingEntry.getSourcePath())) {
 				return mappingEntry;
 			}
 		}
-
 		return null;
 	}
 
