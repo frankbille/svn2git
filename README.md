@@ -53,20 +53,10 @@ This todo list should go to the issue tracker at some point:
   * It is possible to convert into separate branches, but actual *branching* does
     not happen at the moment.
 * Tagging support!
+* Property support. Especially ignore and executable.
 * Possibility to import a standard svn-git authors file, to avoid having to type
   them in again.
 * CLI frontend.
-
-
-Caveat
-------
-
-I have not been able to run it successfully on Windows. The last error I got was related
-to SVNKit not being able to do an update of the workspace because it couldn't delete a
-file!?! I'm not putting more energy into that platform at the moment, as it is working
-fine and faster on my Mac.
-If anyone ever want's to use this tool on Windows, please let me know or even
-better: Fork, fix and submit a pull request.
 
 
 Licenses and attributions
