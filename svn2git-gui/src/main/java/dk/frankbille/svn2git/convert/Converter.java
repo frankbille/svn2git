@@ -93,9 +93,13 @@ public class Converter {
 					public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
 						Map<String, SVNLogEntryPath> changedPaths = logEntry.getChangedPaths();
 						for (String changedPath : changedPaths.keySet()) {
-							MappingEntry entry = getEntryForPath(changedPath);
-							if (entry != null) {
-								revisionEntries.add(entry);
+							SVNLogEntryPath svnLogEntryPath = changedPaths.get(changedPath);
+							
+							if (svnLogEntryPath.getKind().equals(SVNNodeKind.FILE)) {
+								MappingEntry entry = getEntryForPath(changedPath);
+								if (entry != null) {
+									revisionEntries.add(entry);
+								}
 							}
 						}
 					}
