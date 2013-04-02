@@ -2,13 +2,6 @@ Subversion to Git converter [![Build Status](https://travis-ci.org/frankbille/sv
 ===========================
 
 
-WORK IN PROGRESS
-----------------
-
-This software is in early alpha phase. It is possible to do a simple conversion,
-but it there are still a lot of features missing.
-
-
 Introduction
 ------------
 
@@ -52,7 +45,9 @@ To use you have two options:
 Todo
 ----
 
-This todo list should go to the issue tracker at some point
+This software is in early alpha phase. It is possible to do a simple conversion,
+but it there are still a lot of features missing.
+This todo list should go to the issue tracker at some point:
 
 * Branching support!
   * It is possible to convert into separate branches, but actual *branching* does
