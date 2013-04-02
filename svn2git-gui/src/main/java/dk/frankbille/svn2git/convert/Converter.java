@@ -107,11 +107,11 @@ public class Converter {
 					if (revisionEntries.contains(mappingEntry)) {
 						checkoutOrUpdateMappingEntry(mappingEntry, revision);
 					}
-					fireMappingEntryUpdated(mappingEntry, currentRevision);
+					fireMappingEntryUpdated(mappingEntry, currentRevision, endRevision);
 				}
 
 				processWorkspace(revision, revisionEntries);
-				fireRevisionProcessed(currentRevision);
+				fireRevisionProcessed(currentRevision, endRevision);
 			}
 		} catch (SVNException e) {
 			log.error(e.getMessage(), e);
@@ -286,15 +286,15 @@ public class Converter {
 		return project.getGitAuthor(svnUsername);
 	}
 
-	private void fireRevisionProcessed(long revisionNumber) {
+	private void fireRevisionProcessed(long revisionNumber, long endRevisionNumber) {
 		for (ConversionListener conversionListener : conversionListeners) {
-			conversionListener.revisionProcessed(revisionNumber);
+			conversionListener.revisionProcessed(revisionNumber, endRevisionNumber);
 		}
 	}
 
-	private void fireMappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber) {
+	private void fireMappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber, long endRevisionNumber) {
 		for (ConversionListener conversionListener : conversionListeners) {
-			conversionListener.mappingEntryUpdated(mappingEntry, revisionNumber);
+			conversionListener.mappingEntryUpdated(mappingEntry, revisionNumber, endRevisionNumber);
 		}
 	}
 

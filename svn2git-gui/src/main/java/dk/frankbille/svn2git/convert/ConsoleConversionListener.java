@@ -7,12 +7,12 @@ import dk.frankbille.svn2git.model.MappingEntry;
 public class ConsoleConversionListener implements ConversionListener {
 
 	@Override
-	public void revisionProcessed(long revisionNumber) {
+	public void revisionProcessed(long revisionNumber, long endRevisionNumber) {
 		System.out.println("Finished processing the revision: "+revisionNumber);
 	}
 
 	@Override
-	public void mappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber) {
+	public void mappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber, long endRevisionNumber) {
 		System.out.println("Finished updating for the mapping entry: "+mappingEntry.getSourcePath());
 	}
 

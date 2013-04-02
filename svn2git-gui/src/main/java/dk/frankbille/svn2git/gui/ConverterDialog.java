@@ -33,6 +33,7 @@ public class ConverterDialog extends JDialog {
 	private ConverterWorker converterWorker;
 	private JButton actionButton;
 	private long gitFastImportFileLength = 0;
+	private int maxRevisionSteps;
 
 	/**
 	 * Create the dialog.
@@ -51,10 +52,10 @@ public class ConverterDialog extends JDialog {
 		JLabel overallProgressLabel = new JLabel("Overall progress");
 		getContentPane().add(overallProgressLabel, "2, 2, 5, 1");
 
-		final int maxRevisionSteps = project.getMappingEntries().size() + 1;
-		final int maxOverallSteps = (1 + (int) (project.getEndRevision() - project.getStartRevision())) * maxRevisionSteps;
+		maxRevisionSteps = project.getMappingEntries().size() + 1;
 
-		overallProgressBar = new JProgressBar(0, maxOverallSteps);
+		overallProgressBar = new JProgressBar();
+		overallProgressBar.setMinimum(0);
 		overallProgressBar.setValue(0);
 		overallProgressBar.setStringPainted(true);
 		getContentPane().add(overallProgressBar, "2, 4, 5, 1");
@@ -87,24 +88,27 @@ public class ConverterDialog extends JDialog {
 		converter = new Converter(project);
 		converter.addConversionListener(new ConversionListener() {
 			@Override
-			public void revisionProcessed(long revisionNumber) {
-				tick(revisionNumber);
+			public void revisionProcessed(long revisionNumber, long endRevisionNumber) {
+				tick(revisionNumber, endRevisionNumber);
 			}
 
 			@Override
-			public void mappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber) {
-				tick(revisionNumber);
+			public void mappingEntryUpdated(MappingEntry mappingEntry, long revisionNumber, long endRevisionNumber) {
+				tick(revisionNumber, endRevisionNumber);
 			}
 
-			private void tick(long revisionNumber) {
+			private void tick(long revisionNumber, long endRevisionNumber) {
 				if (revisionProgressBar.getValue() >= revisionProgressBar.getMaximum()) {
 					revisionProgressBar.setValue(0);
 				}
+				
+				int maxOverallSteps = (1 + (int) (endRevisionNumber - project.getStartRevision())) * maxRevisionSteps;
+				overallProgressBar.setMaximum(maxOverallSteps);
 
 				overallProgressBar.setValue(overallProgressBar.getValue() + 1);
 				revisionProgressBar.setValue(revisionProgressBar.getValue() + 1);
 
-				overallProgressBar.setString("" + revisionNumber + "/" + project.getEndRevision());
+				overallProgressBar.setString("" + revisionNumber + "/" + endRevisionNumber);
 			}
 
 			@Override
