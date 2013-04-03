@@ -289,13 +289,9 @@ public class Converter {
 	}
 
 	private void appendToFastImportFile(File file) throws IOException {
-		FileInputStream fileInputStream = null;
-		try {
-			fileInputStream = new FileInputStream(file);
+		try (FileInputStream fileInputStream = new FileInputStream(file)) {
 			int bytesCopied = IOUtils.copy(fileInputStream, getGitFastImportFileOutputStream());
 			fireGitFastImportFileChanged(bytesCopied);
-		} finally {
-			IOUtils.closeQuietly(fileInputStream);
 		}
 	}
 
