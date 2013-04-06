@@ -5,7 +5,6 @@ import java.beans.PropertyChangeSupport;
 
 public class MappingEntry {
 
-	private String checkoutPath;
 	private String sourcePath;
 	private String destinationPath;
 	private String destinationRef;
@@ -15,24 +14,10 @@ public class MappingEntry {
 	public MappingEntry() {
 	}
 
-	public MappingEntry(String sourcePath, String destinationPath) {
-		this(sourcePath, sourcePath, destinationPath);
-	}
-
-	public MappingEntry(String checkoutPath, String sourcePath, String destinationPath) {
-		this.checkoutPath = checkoutPath;
+	public MappingEntry(String sourcePath, String destinationPath, String destinationRef) {
 		this.sourcePath = sourcePath;
 		this.destinationPath = destinationPath;
-	}
-
-	public String getCheckoutPath() {
-		return checkoutPath;
-	}
-
-	public void setCheckoutPath(String checkoutPath) {
-		String oldCheckoutPath = this.checkoutPath;
-		this.checkoutPath = checkoutPath;
-		propertyChangeSupport.firePropertyChange("checkoutPath", oldCheckoutPath, checkoutPath);
+		this.destinationRef = destinationRef;
 	}
 
 	public String getSourcePath() {
@@ -54,11 +39,11 @@ public class MappingEntry {
 		this.destinationPath = destinationPath;
 		propertyChangeSupport.firePropertyChange("destinationPath", oldDestinationPath, destinationPath);
 	}
-	
+
 	public String getDestinationRef() {
 		return destinationRef;
 	}
-	
+
 	public void setDestinationRef(String destinationRef) {
 		String oldDestinationRef = this.destinationRef;
 		this.destinationRef = destinationRef;

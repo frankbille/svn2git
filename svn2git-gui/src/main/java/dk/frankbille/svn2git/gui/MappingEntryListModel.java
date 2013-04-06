@@ -61,19 +61,17 @@ public class MappingEntryListModel extends AbstractTableModel {
 
 	@Override
 	public int getColumnCount() {
-		return 4;
+		return 3;
 	}
 
 	@Override
 	public String getColumnName(int column) {
 		switch (column) {
 		case 0:
-			return "Checkout Path";
-		case 1:
 			return "Source Path";
-		case 2:
+		case 1:
 			return "Destination Path";
-		case 3:
+		case 2:
 			return "Destination Ref";
 		}
 
@@ -85,12 +83,10 @@ public class MappingEntryListModel extends AbstractTableModel {
 		MappingEntry mappingEntry = project.getMappingEntries().get(rowIndex);
 		switch (columnIndex) {
 		case 0:
-			return mappingEntry.getCheckoutPath();
-		case 1:
 			return mappingEntry.getSourcePath();
-		case 2:
+		case 1:
 			return mappingEntry.getDestinationPath();
-		case 3:
+		case 2:
 			return mappingEntry.getDestinationRef();
 		}
 

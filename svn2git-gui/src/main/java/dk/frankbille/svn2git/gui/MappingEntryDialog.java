@@ -21,8 +21,6 @@ public class MappingEntryDialog extends JDialog {
 	private static final long serialVersionUID = 1L;
 
 	private final JPanel contentPanel = new JPanel();
-
-	private JTextField checkoutPathField;
 	private JTextField sourcePathField;
 	private JTextField destinationPathField;
 	private JTextField destinationRefField;
@@ -57,55 +55,41 @@ public class MappingEntryDialog extends JDialog {
 				FormFactory.RELATED_GAP_ROWSPEC,
 				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,
-				FormFactory.DEFAULT_ROWSPEC,
-				FormFactory.RELATED_GAP_ROWSPEC,
 				RowSpec.decode("3dlu:grow"),
 				FormFactory.DEFAULT_ROWSPEC,
 				FormFactory.RELATED_GAP_ROWSPEC,}));
-		// @formatter:on
-
-		{
-			JLabel checkoutPathLabel = new JLabel("Checkout Path");
-			checkoutPathLabel.setToolTipText("The path in the SVN repository to checkout/update.");
-			contentPanel.add(checkoutPathLabel, "2, 2, left, default");
-		}
-		{
-			checkoutPathField = new JTextField(mappingEntry.getCheckoutPath());
-			contentPanel.add(checkoutPathField, "4, 2, 4, 1, fill, default");
-		}
 		{
 			JLabel sourcePathLabel = new JLabel("Source Path");
 			sourcePathLabel.setToolTipText("The path in the SVN repository to migrate");
-			contentPanel.add(sourcePathLabel, "2, 4, left, default");
+			contentPanel.add(sourcePathLabel, "2, 2, left, default");
 		}
 		{
 			sourcePathField = new JTextField(mappingEntry.getSourcePath());
-			contentPanel.add(sourcePathField, "4, 4, 4, 1, fill, default");
+			contentPanel.add(sourcePathField, "4, 2, 4, 1, fill, default");
 		}
 		{
 			JLabel destinationPathLabel = new JLabel("Destination Path");
 			destinationPathLabel.setToolTipText("The path in the Git repository");
-			contentPanel.add(destinationPathLabel, "2, 6, left, default");
+			contentPanel.add(destinationPathLabel, "2, 4, left, default");
 		}
 		{
 			destinationPathField = new JTextField(mappingEntry.getDestinationPath());
-			contentPanel.add(destinationPathField, "4, 6, 4, 1, fill, default");
+			contentPanel.add(destinationPathField, "4, 4, 4, 1, fill, default");
 		}
 		{
 			JLabel destinationRefLabel = new JLabel("Destination Ref");
 			destinationRefLabel.setToolTipText("The ref spec in the Git repository");
-			contentPanel.add(destinationRefLabel, "2, 8, left, default");
+			contentPanel.add(destinationRefLabel, "2, 6, left, default");
 		}
 		{
 			destinationRefField = new JTextField(mappingEntry.getDestinationRef());
-			contentPanel.add(destinationRefField, "4, 8, 4, 1, fill, default");
+			contentPanel.add(destinationRefField, "4, 6, 4, 1, fill, default");
 			destinationRefField.setColumns(10);
 		}
 		{
 			JButton okButton = new JButton("OK");
 			okButton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					mappingEntry.setCheckoutPath(checkoutPathField.getText());
 					mappingEntry.setSourcePath(sourcePathField.getText());
 					mappingEntry.setDestinationPath(destinationPathField.getText());
 					mappingEntry.setDestinationRef(destinationRefField.getText());
@@ -115,7 +99,7 @@ public class MappingEntryDialog extends JDialog {
 					MappingEntryDialog.this.dispose();
 				}
 			});
-			contentPanel.add(okButton, "5, 11");
+			contentPanel.add(okButton, "5, 9");
 		}
 		{
 			JButton cancelButton = new JButton("Cancel");
@@ -124,7 +108,7 @@ public class MappingEntryDialog extends JDialog {
 					MappingEntryDialog.this.dispose();
 				}
 			});
-			contentPanel.add(cancelButton, "7, 11");
+			contentPanel.add(cancelButton, "7, 9");
 		}
 	}
 
