@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tmatesoft.svn.core.ISVNLogEntryHandler;
@@ -93,13 +94,9 @@ public class Converter {
 					public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
 						Map<String, SVNLogEntryPath> changedPaths = logEntry.getChangedPaths();
 						for (String changedPath : changedPaths.keySet()) {
-							SVNLogEntryPath svnLogEntryPath = changedPaths.get(changedPath);
-							
-							if (svnLogEntryPath.getKind().equals(SVNNodeKind.FILE)) {
-								MappingEntry entry = getEntryForPath(changedPath);
-								if (entry != null) {
-									revisionEntries.add(entry);
-								}
+							MappingEntry entry = getEntryForPath(changedPath);
+							if (entry != null) {
+								revisionEntries.add(entry);
 							}
 						}
 					}
@@ -194,8 +191,8 @@ public class Converter {
 								String changedPath = changedPathEntries.getKey();
 								SVNLogEntryPath svnLogEntryPath = changedPathEntries.getValue();
 
-								if (svnLogEntryPath.getKind().equals(SVNNodeKind.FILE) && isPathIncluded(changedPath)) {
-									commit.addFile(new File(project.getWorkspaceFolder(), changedPath), getOperation(svnLogEntryPath.getType()));
+								if (isPathIncluded(changedPath)) {
+									commit.addFile(new File(project.getWorkspaceFolder(), changedPath), svnLogEntryPath);
 								}
 							}
 						}
@@ -205,8 +202,7 @@ public class Converter {
 				}
 			}
 
-			Map<File, String> files = commit.getFiles();
-			if (false == files.isEmpty()) {
+			if (commit.hasFiles()) {
 				appendToFastImportFile("commit " + destinationRef);
 				appendNewlineToFastImportFile();
 				appendToFastImportFile("mark :" + revision.getNumber());
@@ -217,40 +213,61 @@ public class Converter {
 				appendNewlineToFastImportFile();
 				appendToFastImportFile(commit.getCommitMessage());
 				appendNewlineToFastImportFile();
-				for (File file : files.keySet()) {
-					String operation = files.get(file);
-					String filePath = file.getAbsolutePath().replace(project.getWorkspaceFolder(), "");
-					filePath = filePath.replace(System.getProperty("file.separator"), "/");
-					MappingEntry mappingEntry = getEntryForPath(filePath);
-					filePath = filePath.replace(mappingEntry.getSourcePath(), mappingEntry.getDestinationPath());
+				
+				Map<File, SVNLogEntryPath> addedFiles = commit.getAddedFiles();
+				for (Entry<File, SVNLogEntryPath> addedEntry : addedFiles.entrySet()) {
+					File file = addedEntry.getKey();
+					SVNLogEntryPath logEntryPath = addedEntry.getValue();
+					String filePath = createFilePath(file);
 
-					if ("M".equals(operation)) {
-						appendToFastImportFile("M 644 inline " + filePath);
-						appendNewlineToFastImportFile();
-						appendToFastImportFile("data " + file.length());
-						appendNewlineToFastImportFile();
-						appendToFastImportFile(file);
-						appendNewlineToFastImportFile();
-					} else if ("D".equals(operation)) {
-						appendToFastImportFile("D " + filePath);
+					if (logEntryPath.getCopyPath() != null) {
+						appendToFastImportFile("C "+StringUtils.removeStart(logEntryPath.getCopyPath(), "/")+" " + filePath);
 						appendNewlineToFastImportFile();
 					}
+				
+					if (SVNNodeKind.FILE.equals(logEntryPath.getKind())) {
+						appendFileChange(file, filePath);
+					}
+				}
+				
+				Map<File, SVNLogEntryPath> modifiedFiles = commit.getModifiedFiles();
+				for (Entry<File, SVNLogEntryPath> modifiedEntry : modifiedFiles.entrySet()) {
+					File file = modifiedEntry.getKey();
+					SVNLogEntryPath logEntryPath = modifiedEntry.getValue();
+					String filePath = createFilePath(file);
+
+					if (SVNNodeKind.FILE.equals(logEntryPath.getKind())) {
+						appendFileChange(file, filePath);
+					}
+				}
+				
+				Map<File, SVNLogEntryPath> deletedFiles = commit.getDeletedFiles();
+				for (Entry<File, SVNLogEntryPath> deletedEntry : deletedFiles.entrySet()) {
+					File file = deletedEntry.getKey();
+					String filePath = createFilePath(file);
+
+					appendToFastImportFile("D " + filePath);
+					appendNewlineToFastImportFile();
 				}
 			}
 		}
 	}
 
-	private String getOperation(char svnType) {
-		switch (svnType) {
-		case 'M':
-		case 'A':
-		case 'R':
-			return "M";
-		case 'D':
-			return "D";
-		}
-
-		throw new IllegalArgumentException("Don't know how to handle " + svnType);
+	private String createFilePath(File file) {
+		String filePath = file.getAbsolutePath().replace(project.getWorkspaceFolder(), "");
+		filePath = filePath.replace(System.getProperty("file.separator"), "/");
+		MappingEntry mappingEntry = getEntryForPath(filePath);
+		filePath = StringUtils.replaceOnce(filePath, mappingEntry.getSourcePath(), mappingEntry.getDestinationPath());
+		return filePath;
+	}
+	
+	private void appendFileChange(File file, String filePath) throws IOException {
+		appendToFastImportFile("M 644 inline " + filePath);
+		appendNewlineToFastImportFile();
+		appendToFastImportFile("data " + file.length());
+		appendNewlineToFastImportFile();
+		appendToFastImportFile(file);
+		appendNewlineToFastImportFile();
 	}
 
 	private MappingEntry getEntryForPath(String path) {

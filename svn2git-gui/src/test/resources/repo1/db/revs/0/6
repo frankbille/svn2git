@@ -1,0 +1,55 @@
+id: 2-3.1-6.r6/0
+type: file
+pred: 2-3.0.r5/82
+count: 2
+text: 5 0 62 50 efd9697896a64f0e12ae9469bc65b3f3 66fe22141252b6210f99afb15144101ef654a00d 4-4/_2
+props: 3 47 39 39 f2ea0bdf4310dae3aef66de358bcb0e1
+cpath: /folder2/file2.txt
+copyfrom: 5 /folder1/file2.txt
+
+PLAIN
+K 9
+file2.txt
+V 17
+file 2-3.1-6.r6/0
+END
+ENDREP
+id: 0-3.0-6.r6/315
+type: dir
+pred: 0-3.0.r3/377
+count: 1
+text: 6 261 41 41 0802db29617e011dce54ea40dad4e571
+cpath: /folder2
+copyfrom: 3 /folder1
+
+PLAIN
+K 8
+.project
+V 17
+file 0-1.0.r1/280
+K 9
+file1.txt
+V 16
+file 0-2.0.r4/69
+K 7
+folder2
+V 18
+dir 0-3.0-6.r6/315
+END
+ENDREP
+id: 0.0.r6/586
+type: dir
+pred: 0.0.r5/638
+count: 6
+text: 6 461 112 112 a8ebf3b43cf3e546881bf3c96cb0300d
+cpath: /
+copyroot: 0 /
+
+0-3.0.r5/378 delete-dir false false /folder1
+
+0-3._0.t5-6 add-dir false false /folder2
+3 /folder1
+2-3._1.t5-6 replace-file false false /folder2/file2.txt
+5 /folder1/file2.txt
+
+586 714
