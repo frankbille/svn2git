@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,6 +39,7 @@ import dk.frankbille.svn2git.model.Project;
 public class Converter {
 
 	private static final Logger log = LoggerFactory.getLogger(Converter.class);
+	private static final SimpleDateFormat TZ_FORMAT = new SimpleDateFormat("XX");
 	
 	private static class RevisionHandler implements ISVNLogEntryHandler {
 		private long revision = -1;
@@ -62,6 +64,8 @@ public class Converter {
 	private boolean run = true;
 
 	private SVNURL svnUrl;
+	
+	private Map<Long, Set<MappingEntry>> handledEntriesPerRevision = new HashMap<>();
 
 	public Converter(Project project) {
 		this.project = project;
@@ -89,6 +93,7 @@ public class Converter {
 
 				// Find out which mapping entries is covered by the revision
 				final Set<MappingEntry> revisionEntries = new HashSet<>();
+				handledEntriesPerRevision.put(currentRevision, revisionEntries);
 				svnClient.getLogClient().doLog(svnUrl, new String[] { "/" }, revision, revision, revision, false, true, 0, new ISVNLogEntryHandler() {
 					@Override
 					public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
@@ -207,12 +212,17 @@ public class Converter {
 				appendNewlineToFastImportFile();
 				appendToFastImportFile("mark :" + revision.getNumber());
 				appendNewlineToFastImportFile();
-				appendToFastImportFile("committer " + getGitAuthor(commit.getAuthor()) + " " + commit.getCommitDate().getTime() / 1000 + " +0100");
+				appendToFastImportFile("committer " + getGitAuthor(commit.getAuthor()) + " " + commit.getCommitDate().getTime() / 1000 + " "+TZ_FORMAT.format(commit.getCommitDate()));
 				appendNewlineToFastImportFile();
 				appendToFastImportFile("data " + commit.getCommitMessage().getBytes("UTF-8").length);
 				appendNewlineToFastImportFile();
 				appendToFastImportFile(commit.getCommitMessage());
 				appendNewlineToFastImportFile();
+				Long fromBranchRevision = getFromBranchRevision(commit);
+				if (fromBranchRevision != null) {
+					appendToFastImportFile("from :" + fromBranchRevision);
+					appendNewlineToFastImportFile();
+				}
 				
 				Map<File, SVNLogEntryPath> addedFiles = commit.getAddedFiles();
 				for (Entry<File, SVNLogEntryPath> addedEntry : addedFiles.entrySet()) {
@@ -221,7 +231,7 @@ public class Converter {
 					String filePath = createFilePath(file);
 
 					if (logEntryPath.getCopyPath() != null) {
-						appendToFastImportFile("C "+StringUtils.removeStart(logEntryPath.getCopyPath(), "/")+" " + filePath);
+						appendToFastImportFile("C "+convertPath(logEntryPath.getCopyPath())+" " + filePath);
 						appendNewlineToFastImportFile();
 					}
 				
@@ -256,8 +266,14 @@ public class Converter {
 	private String createFilePath(File file) {
 		String filePath = file.getAbsolutePath().replace(project.getWorkspaceFolder(), "");
 		filePath = filePath.replace(System.getProperty("file.separator"), "/");
+		filePath = convertPath(filePath);
+		return filePath;
+	}
+
+	private String convertPath(String filePath) {
 		MappingEntry mappingEntry = getEntryForPath(filePath);
 		filePath = StringUtils.replaceOnce(filePath, mappingEntry.getSourcePath(), mappingEntry.getDestinationPath());
+		filePath = StringUtils.removeStart(filePath, "/");
 		return filePath;
 	}
 	
@@ -268,6 +284,28 @@ public class Converter {
 		appendNewlineToFastImportFile();
 		appendToFastImportFile(file);
 		appendNewlineToFastImportFile();
+	}
+	
+	private Long getFromBranchRevision(Commit commit) {
+		Set<SVNLogEntryPath> copyEntries = commit.getCopyEntries();
+		for (SVNLogEntryPath logEntryPath : copyEntries) {
+			String path = logEntryPath.getPath();
+			String copyPath = logEntryPath.getCopyPath();
+			if (isPathIncluded(path) && isPathIncluded(copyPath)) {
+				MappingEntry entryForPath = getEntryForPath(path);
+				MappingEntry entryForCopyPath = getEntryForPath(copyPath);
+				
+				if (false == entryForPath.getDestinationRef().equals(entryForCopyPath.getDestinationRef())) {
+					long foundRevision = logEntryPath.getCopyRevision();
+					while (false == handledEntriesPerRevision.get(foundRevision).contains(entryForCopyPath)) {
+						foundRevision--;
+					}
+					return foundRevision;
+				}
+			}
+		}
+		
+		return null;
 	}
 
 	private MappingEntry getEntryForPath(String path) {
@@ -288,7 +326,7 @@ public class Converter {
 
 	private boolean isPathIncluded(String path) {
 		for (MappingEntry mappingEntry : project.getMappingEntries()) {
-			if (path.contains(mappingEntry.getSourcePath())) {
+			if (path.startsWith(mappingEntry.getSourcePath())) {
 				return true;
 			}
 		}

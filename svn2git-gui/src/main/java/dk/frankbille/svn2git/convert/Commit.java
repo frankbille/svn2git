@@ -3,8 +3,10 @@ package dk.frankbille.svn2git.convert;
 import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.tmatesoft.svn.core.SVNLogEntryPath;
 
@@ -67,6 +69,16 @@ public class Commit {
 			}
 		}
 		return changedFiles;
+	}
+
+	public Set<SVNLogEntryPath> getCopyEntries() {
+		Set<SVNLogEntryPath> copyEntries = new HashSet<>();
+		for (SVNLogEntryPath logEntryPath : files.values()) {
+			if (logEntryPath.getCopyPath() != null) {
+				copyEntries.add(logEntryPath);
+			}
+		}
+		return copyEntries;
 	}
 	
 	public void addFile(File file, SVNLogEntryPath logEntryPath) {
