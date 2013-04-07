@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tmatesoft.svn.core.ISVNLogEntryHandler;
 import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNLogEntry;
 import org.tmatesoft.svn.core.SVNLogEntryPath;
@@ -157,7 +158,13 @@ public class Converter {
 		File mappingEntryWorkspace = new File(project.getWorkspaceFolder(), mappingEntry.getSourcePath());
 
 		if (mappingEntryWorkspace.exists()) {
-			updateClient.doUpdate(mappingEntryWorkspace, revision, SVNDepth.INFINITY, true, true);
+			try {
+				updateClient.doUpdate(mappingEntryWorkspace, revision, SVNDepth.INFINITY, true, true);
+			} catch (SVNException e) {
+				if (false == SVNErrorCode.FS_PATH_SYNTAX.equals(e.getErrorMessage().getErrorCode())) {
+					throw e;
+				}
+			}
 		} else {
 			mappingEntryWorkspace.mkdirs();
 			updateClient.doCheckout(svnUrl.appendPath(mappingEntry.getSourcePath(), true), mappingEntryWorkspace, revision, revision, SVNDepth.INFINITY, true);
@@ -230,7 +237,7 @@ public class Converter {
 					SVNLogEntryPath logEntryPath = addedEntry.getValue();
 					String filePath = createFilePath(file);
 
-					if (logEntryPath.getCopyPath() != null) {
+					if (logEntryPath.getCopyPath() != null && isPathIncluded(logEntryPath.getCopyPath())) {
 						appendToFastImportFile("C "+convertPath(logEntryPath.getCopyPath())+" " + filePath);
 						appendNewlineToFastImportFile();
 					}
@@ -254,19 +261,28 @@ public class Converter {
 				Map<File, SVNLogEntryPath> deletedFiles = commit.getDeletedFiles();
 				for (Entry<File, SVNLogEntryPath> deletedEntry : deletedFiles.entrySet()) {
 					File file = deletedEntry.getKey();
-					String filePath = createFilePath(file);
-
-					appendToFastImportFile("D " + filePath);
-					appendNewlineToFastImportFile();
+					String filePath = convertToRelativeFile(file);
+					MappingEntry entryForPath = getEntryForPath(filePath);
+					if (entryForPath.getSourcePath().equals(filePath) == false) {
+						filePath = createFilePath(file);
+						
+						appendToFastImportFile("D " + filePath);
+						appendNewlineToFastImportFile();
+					}
 				}
 			}
 		}
 	}
 
 	private String createFilePath(File file) {
+		String filePath = convertToRelativeFile(file);
+		filePath = convertPath(filePath);
+		return filePath;
+	}
+
+	private String convertToRelativeFile(File file) {
 		String filePath = file.getAbsolutePath().replace(project.getWorkspaceFolder(), "");
 		filePath = filePath.replace(System.getProperty("file.separator"), "/");
-		filePath = convertPath(filePath);
 		return filePath;
 	}
 
